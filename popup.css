@@ -1,0 +1,93 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  color: gray;
+}
+
+a,
+a:visited {
+  color: gray;
+}
+
+#container {
+  position: relative;
+  box-sizing: border-box;
+  width: 300px;
+  height: 150px;
+  margin: 2.5px;
+  border: 1px solid lightgray;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#btn-wrapper {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#toggle-btn {
+  box-sizing: content-box;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  background: none;
+  border: 3px solid lightgray;
+  background-color: lightgray;
+  border-radius: 15px;
+  width: 54px;
+  height: 24px;
+  padding: 0;
+}
+
+#toggle-btn .switch {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  height: 24px;
+  width: 54px;
+  transition: transform 0.2s 0s ease-in-out;
+  transform: translateX(-30px);
+}
+
+#toggle-btn .switch .switch__dot {
+  z-index: 2;
+  background-color: white;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 100%;
+}
+
+#toggle-btn .switch .switch__bg {
+  z-index: 1;
+  background-color: #24a0ed;
+  width: calc(100% - 12px);
+  height: 100%;
+  transition: opacity 0s 0.2s;
+  opacity: 0;
+}
+
+#toggle-btn.enabled .switch {
+  transform: translateX(0px);
+}
+
+#toggle-btn.enabled .switch .switch__bg {
+  transition: opacity 0s 0s;
+  opacity: 1;
+}
+
+.footer {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  text-align: center;
+  padding: 5px;
+  font-size: 10px;
+}
