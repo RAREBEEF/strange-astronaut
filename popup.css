@@ -1,20 +1,37 @@
+@font-face {
+  font-family: "Orbit"; /* 폰트 패밀리 이름을 지정합니다. */
+  src: url("./src/font/Orbit-Regular.ttf") format("truetype"); /* 폰트 파일 경로를 지정합니다. */
+  /* 다른 포맷도 지원할 경우 여러 개의 src를 지정할 수 있습니다. */
+}
+
 html,
+body,
 body {
   margin: 0;
   padding: 0;
-  color: gray;
 }
 
+*,
 a,
-a:visited {
-  color: gray;
+button {
+  color: #000;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  font-family: "Orbit", monospace;
+}
+
+button {
+  padding: 5px 20px;
+  padding-bottom: 8px;
+  font-size: 16px;
 }
 
 #container {
   position: relative;
   box-sizing: border-box;
   width: 300px;
-  height: 150px;
+  height: 500px;
   margin: 2.5px;
   border: 1px solid lightgray;
   display: flex;
@@ -23,11 +40,80 @@ a:visited {
   align-items: center;
 }
 
-#btn-wrapper {
+.header-wrapper {
+  text-align: center;
+}
+
+.header-wrapper #header-en {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 15px 0px;
+}
+
+#trial-wrapper {
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+#trial-wrapper #trial-timer-header {
+}
+#trial-wrapper #trial-timer {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+#trial-wrapper #trial-timer #timer-hour,
+#trial-wrapper #trial-timer #timer-minute,
+#trial-wrapper #trial-timer #timer-second,
+#trial-wrapper #trial-timer .timer-colon {
+  font-size: 24px;
+}
+
+#trial-wrapper #trial-timer .timer-colon {
+  user-select: none;
+}
+
+#app-control {
+  position: relative;
+  width: 90%;
+  flex-grow: 1;
+  border: 1px solid gray;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#app-unavailable {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  font-size: 24px;
+  background-color: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(1px);
+}
+
+#toggle-btn-wrapper {
+  /* flex-grow: 1; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid red;
+}
+
+#toggle-label {
+  color: gray;
+  font-size: 16px;
+  margin-bottom: 5px;
 }
 
 #toggle-btn {
@@ -85,9 +171,124 @@ a:visited {
   opacity: 1;
 }
 
-.footer {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
+#customize-wrapper {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid black;
+}
+
+#customize-wrapper #customize-size {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#payment-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex-grow: 1;
+  margin-bottom: 25px;
+}
+
+#payment-wrapper .payment-locale-wrapper {
+  text-align: center;
+}
+
+#payment-wrapper .payment-locale-wrapper .description-wrapper {
+  word-break: keep-all;
+  padding: 0;
+  margin: 0px auto 5px;
+  width: 90%;
+}
+
+#payment-wrapper
+  .payment-locale-wrapper
+  .description-wrapper
+  #payment-description {
+  padding: 0;
+  margin: 0;
+  color: gray;
+}
+
+#payment-wrapper .payment-locale-wrapper .btn-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+#payment-wrapper .payment-locale-wrapper .btn-wrapper .payment-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  text-decoration: none;
+  background-color: black;
+  border: none;
+  border-radius: 10px;
+  text-align: center;
+}
+
+#payment-wrapper .payment-locale-wrapper .btn-wrapper .payment-btn:hover .icon {
+  animation: boost 2s 0s ease-in-out infinite;
+}
+
+@keyframes boost {
+  0% {
+    opacity: 1;
+    transform: translate(0px, 0px);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-5px, 5px);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(48px, -48px);
+  }
+  51% {
+    opacity: 0;
+    transform: translate(48px, -48px);
+  }
+  52% {
+    opacity: 0;
+    transform: translate(-48px, 48px);
+  }
+  53% {
+    opacity: 1;
+    transform: translate(-48px, 48px);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-48px, 48px);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(0px, 0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0px, 0px);
+  }
+}
+
+#payment-wrapper .payment-locale-wrapper .btn-wrapper .payment-btn .icon {
+  display: inline;
+  font-size: 18px;
+  margin-right: 10px;
+}
+
+#payment-wrapper .payment-locale-wrapper .btn-wrapper .payment-btn .text {
+  color: white;
+  display: inline;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.footer p {
+  color: gray;
   text-align: center;
   padding: 5px;
-  font-size: 10px;
+  font-size: 11px;
 }

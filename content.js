@@ -11,12 +11,21 @@ cvs.style.top = 0;
 cvs.style.left = 0;
 cvs.style.pointerEvents = "none";
 cvs.style.zIndex = 10000;
-cvs.style.transform = "translate3d(0,0,0)";
+cvs.style.transform = "translate3d(-100vw,-100vh,0)";
+// 뷰포트의 2배 크기인 캔버스를 0.5배율로 조절해 사이즈를 맞춤
+cvs.style.scale = "0.5";
+
+// finger img
+const LEFT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="226.55" cy="349.91" rx="151.53" ry="162.44" transform="translate(-61.72 48.81) rotate(-10.83)"/><polygon class="cls-1" points="251.8 337.92 343.95 322.43 295.33 38.16 203.17 53.65 251.8 337.92"/><ellipse class="cls-1" cx="249.25" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
+const RIGHT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="285.45" cy="349.91" rx="162.44" ry="151.53" transform="translate(-111.87 564.52) rotate(-79.17)"/><polygon class="cls-1" points="260.2 337.92 168.05 322.43 216.67 38.16 308.83 53.65 260.2 337.92"/><ellipse class="cls-1" cx="262.75" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
 
 // variable
+let isPaid = false;
+let enablePizza = false;
 let dots = {};
-let cvsSize = [window.innerWidth, window.innerHeight];
-let mousePos = [0, 0];
+// 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
+let cvsSize = [window.innerWidth * 2, window.innerHeight * 2];
+let mousePos = [100, 100];
 let bodyPos = [0, 0];
 let feet = null;
 let animationFrameId = null;
@@ -517,6 +526,15 @@ const draw = () => {
     );
   });
 
+  // 마우스 커서
+  if (enablePizza) {
+    const pizzaImg = new Image();
+    pizzaImg.src = chrome.runtime.getURL(`images/pizza.png`);
+    drawCommands1.unshift((ctx) => {
+      ctx.drawImage(pizzaImg, mouseX, mouseY, 50, 50);
+    });
+  }
+
   // 그림자 그리기 명령을 drawCommands1으로 합치기
   drawCommands1.unshift(
     (ctx) => {
@@ -562,7 +580,8 @@ const updateAndDraw = () => {
 };
 
 const windowResizeHandler = () => {
-  const newCvsSize = [window.innerWidth, window.innerHeight];
+  // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
+  const newCvsSize = [window.innerWidth * 2, window.innerHeight * 2];
   cvsSize = newCvsSize;
   bodyWidth = Math.max(...newCvsSize) / areaDivide / 5;
   bodyHeight = bodyWidth * 2.3;
@@ -571,7 +590,9 @@ const windowResizeHandler = () => {
 };
 
 const windowMouseMoveHandler = (e) => {
-  mousePos = [e.clientX, e.clientY];
+  document.body.style.cursor = enablePizza ? "none" : "auto";
+  // 캔버스를 0.5배율 했기 때문에 마우스의 위치는 2배율된 좌표로 계산
+  mousePos = [e.clientX * 2, e.clientY * 2];
 };
 
 const enable = () => {
@@ -630,25 +651,91 @@ const GENERATE_ID = () => {
   return id;
 };
 
-const LEFT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="226.55" cy="349.91" rx="151.53" ry="162.44" transform="translate(-61.72 48.81) rotate(-10.83)"/><polygon class="cls-1" points="251.8 337.92 343.95 322.43 295.33 38.16 203.17 53.65 251.8 337.92"/><ellipse class="cls-1" cx="249.25" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
-const RIGHT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="285.45" cy="349.91" rx="162.44" ry="151.53" transform="translate(-111.87 564.52) rotate(-79.17)"/><polygon class="cls-1" points="260.2 337.92 168.05 322.43 216.67 38.16 308.83 53.65 260.2 337.92"/><ellipse class="cls-1" cx="262.75" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
-
-chrome.storage.local.get(["enabled"], (result) => {
+// 프로그램 활성화 여부 확인
+chrome.storage.sync.get(["enabled"], (result) => {
   if (Object.keys(result).length <= 0 || result.enabled === true) {
     enable();
   }
 });
+// 피자 커서 활성화 여부 확인
+chrome.storage.sync.get(["pizza"], (result) => {
+  if (Object.keys(result).length > 0 && result.pizza === true) {
+    enablePizza = true;
+  }
+});
+// 결제 여부 확인
+chrome.storage.sync.get(["isPaid"], (result) => {
+  if (Object.keys(result).length > 0 && result.isPaid === true) {
+    isPaid = true;
+  }
+});
 
+// 체험 시작 시간
+chrome.storage.sync.get(["trialStartAt"], (result) => {});
+
+// 프로그램 및 피자 커서 활성화 여부 및 결제 여부 감시
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   for (var key in changes) {
+    // 활성화 여부
     if (key === "enabled") {
       const status = changes[key].newValue;
-
       if (status === true) {
         enable();
       } else {
         disable();
       }
+      // 피자 여부
+    } else if (key === "pizza") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        enablePizza = true;
+      } else {
+        enablePizza = false;
+      }
+      // 결제 여부
+    } else if (key === "isPaid") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        isPaid = true;
+      } else {
+        isPaid = false;
+      }
+      // 체험 시작 시간
+    } else if (key === "trialStartAt") {
+      const status = changes[key].newValue;
+      console.log(status);
     }
   }
 });
+
+// 결제 팝업에서 결제가 완료될 경우 여기에서 가장 먼저 결과를 수신한다.
+const receivePaymentData = (e) => {
+  // 보안 검사
+  if (
+    e.origin !== window.location.origin ||
+    e.origin.indexOf("https://b064zwg6-5500.asse.devtunnels.ms") <= -1 ||
+    e.data.extensionId !== chrome.runtime.id
+  ) {
+    return;
+  }
+
+  // 결제 데이터
+  const paymentData = e.data;
+  console.log("at content.js", paymentData);
+
+  // 결제가 성공한 경우
+  if (paymentData.status === "DONE") {
+    // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
+    chrome.runtime.sendMessage({ paymentComplete: true }, function (res) {
+      console.log(res);
+      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
+      // TODO: 결제 팝업에서 답장 수신 후 처리하기
+      window.postMessage(
+        "처리 완료",
+        "https://b064zwg6-5500.asse.devtunnels.ms"
+      );
+    });
+  }
+};
+
+window.addEventListener("message", receivePaymentData);

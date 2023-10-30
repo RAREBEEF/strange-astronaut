@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Strange Astronaut",
   "version": "1.0",
-  "description": "Strange Astronaut",
-  "permissions": ["activeTab", "storage"],
+  "name": "__MSG_appName__",
+  "description": "__MSG_appDesc__",
+  "default_locale": "ko",
+  "permissions": ["tabs", "activeTab", "storage"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -17,14 +18,19 @@
       "matches": ["<all_urls>"],
       "resources": [
         "images/original_character.png",
-        "images/original_character_reverse.png"
+        "images/original_character_reverse.png",
+        "images/pizza.png"
       ]
     }
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["index.js"]
+      "js": ["content.js"]
     }
-  ]
+  ],
+  "incognito": "spanning"
 }
