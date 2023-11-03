@@ -1,3 +1,6 @@
+let AVAILABLE = true;
+let TIMER_INTERVAL = null;
+let TRIAL_OVER = false;
 let IS_PAID = false;
 let ALLOW_DOTS_CUSTOM = false;
 let DOT_COUNT = 20;
@@ -65,6 +68,14 @@ const DOMContentLoadedHandler = async () => {
     await getStorageItem("isPaid", (result) => {
       paymentHandler(result.isPaid);
     });
+    // 체험 종료 여부 초기화
+    await getStorageItem("trialOver", (result) => {
+      if (result.trialOver === true) {
+        trialOverHandler(true);
+      } else {
+        trialOverHandler(false);
+      }
+    });
     // 토글 상태 초기화
     await getStorageItem("enabled", (result) => {
       if (Object.keys(result).length <= 0 || result.enabled === true) {
@@ -73,6 +84,20 @@ const DOMContentLoadedHandler = async () => {
       } else {
         updateStorageItem({ enabled: false });
         disable();
+      }
+    });
+    // 타이머 초기화
+    await getStorageItem("timerActivate", (result) => {
+      if (result.timerActivate === true) {
+        startTimer();
+      }
+    });
+    // 앱 활성화 초기화
+    await getStorageItem("available", (result) => {
+      if (Object.keys(result).length <= 0 || result.available === true) {
+        appAvailableHandler(true);
+      } else {
+        appAvailableHandler(false);
       }
     });
     // 커스텀 초기화
@@ -130,9 +155,84 @@ const DOMContentLoadedHandler = async () => {
         } else {
           paymentHandler(false);
         }
+      } else if (key === "trialOver") {
+        if (changes[key].newValue === true) {
+          trialOverHandler(true);
+        } else {
+          trialOverHandler(false);
+        }
+      } else if (key === "timerActivate") {
+        if (changes[key].newValue === true) {
+          startTimer();
+        } else {
+          shutdownTimer();
+        }
+      } else if (key === "available") {
+        if (changes[key].newValue === true) {
+          appAvailableHandler(true);
+        } else {
+          appAvailableHandler(false);
+        }
       }
     }
   });
+
+  // 앱 활성화 여부
+  function appAvailableHandler(status) {
+    if (status === true) {
+      AVAILABLE = true;
+      // toggleUnavailable.style.display = "none";
+    } else {
+      AVAILABLE = false;
+      // toggleUnavailable.style.display = "flex";
+    }
+  }
+
+  // 체험 종료 여부에 따른 설정
+  function trialOverHandler(trialOver) {
+    if (trialOver === true) {
+      TRIAL_OVER = true;
+      timerHour.textContent = "00";
+      timerMinute.textContent = "00";
+      timerSecond.textContent = "00";
+    } else {
+      TRIAL_OVER = false;
+    }
+  }
+
+  async function startTimer() {
+    if (!TIMER_INTERVAL) {
+      timerHour.textContent = "--";
+      timerMinute.textContent = "--";
+      timerSecond.textContent = "--";
+
+      await getStorageItem("trialStartAt", async (result) => {
+        const { trialStartAt } = result;
+        if (!trialStartAt) {
+          timerHour.textContent = "--";
+          timerMinute.textContent = "--";
+          timerSecond.textContent = "--";
+        } else {
+          const intervalStartAt = await getUnixTime();
+          const remainInit = 3600 + (trialStartAt - intervalStartAt);
+
+          let sec = remainInit;
+          TIMER_INTERVAL ??= setInterval(() => {
+            sec -= 1;
+            const [hour, minute, second] = secToHMS(sec);
+            timerHour.textContent = hour.toString().padStart(2, "0");
+            timerMinute.textContent = minute.toString().padStart(2, "0");
+            timerSecond.textContent = second.toString().padStart(2, "0");
+          }, 1000);
+        }
+      });
+    }
+  }
+
+  function shutdownTimer() {
+    !!TIMER_INTERVAL && clearInterval(TIMER_INTERVAL);
+    TIMER_INTERVAL = null;
+  }
 
   // 결제 여부에 따른 설정
   function paymentHandler(isPaid) {
@@ -248,6 +348,21 @@ const DOMContentLoadedHandler = async () => {
 // functions
 //
 //
+async function getUnixTime() {
+  let time = null;
+
+  await fetch("https://worldtimeapi.org/api/timezone/Etc/UTC")
+    .then((response) => response.json())
+    .then((data) => {
+      time = data.unixtime;
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+
+  return time;
+}
+
 function updateStorageItem(item) {
   chrome.storage.sync.set(item);
 }
@@ -270,6 +385,10 @@ function reset() {
   removeStorageItem("enabled");
   removeStorageItem("pizza");
   removeStorageItem("isPaid");
+  removeStorageItem("trialStartAt");
+  removeStorageItem("trialOver");
+  removeStorageItem("available");
+  removeStorageItem("timerActivate");
   removeStorageItem("size");
   removeStorageItem("allowDotsCustom");
   removeStorageItem("dotCount");

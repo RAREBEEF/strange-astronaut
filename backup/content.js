@@ -3,8 +3,6 @@ const cvs = document.createElement("canvas");
 const ctx = cvs.getContext("2d");
 const offscreenCvs = document.createElement("canvas");
 const offscreenCtx = offscreenCvs.getContext("2d");
-let mouseMoveTarget = window;
-let appendTarget = document.body;
 
 // canvas styles
 cvs.id = "Strange_Astronaut";
@@ -600,32 +598,16 @@ const windowMouseMoveHandler = (e) => {
 
 const enable = () => {
   windowResizeHandler();
-
-  const { innerWidth, innerHeight } = window;
-
-  for (const iframe of document.getElementsByTagName("iframe")) {
-    const { offsetWidth, offsetHeight } = iframe;
-
-    if (innerWidth * 0.8 <= offsetWidth && innerHeight * 0.8 <= offsetHeight) {
-      const iframeDoc = iframe.contentDocument;
-      appendTarget = iframeDoc.body;
-      mouseMoveTarget = iframeDoc.body;
-      break;
-    } else {
-      continue;
-    }
-  }
-  appendTarget.appendChild(cvs);
   window.addEventListener("resize", windowResizeHandler);
-  mouseMoveTarget.addEventListener("mousemove", windowMouseMoveHandler);
-
+  window.addEventListener("mousemove", windowMouseMoveHandler);
+  document.body.appendChild(cvs);
   updateAndDraw();
 };
 const disable = () => {
   cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", windowResizeHandler);
-  mouseMoveTarget.removeEventListener("mousemove", windowMouseMoveHandler);
-  appendTarget.getElementById("Strange_Astronaut").remove();
+  window.removeEventListener("mousemove", windowMouseMoveHandler);
+  document.getElementById("Strange_Astronaut").remove();
 };
 
 const DOT_SORT = (dots) => {
@@ -681,6 +663,14 @@ const customizeDots = (dotCount) => {
   windowResizeHandler();
 };
 
+// 서비스워크 활성화 체크
+let checkSwInterval = null;
+const checkSw = () => {
+  chrome.runtime.sendMessage({ checkSw: true }, function (res) {
+    console.log(res);
+  });
+};
+
 // 프로그램 토글 여부 초기화
 chrome.storage.sync.get(["enabled"], (result) => {
   if (Object.keys(result).length <= 0 || result.enabled === true) {
@@ -697,6 +687,8 @@ chrome.storage.sync.get(["pizza"], (result) => {
 chrome.storage.sync.get(["isPaid"], (result) => {
   if (Object.keys(result).length > 0 && result.isPaid === true) {
     isPaid = true;
+  } else {
+    checkSwInterval = setInterval(checkSw, 10000);
   }
 });
 // 사이즈 초기화
@@ -740,6 +732,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
         checkSwInterval = null;
       } else {
         isPaid = false;
+        setInterval(checkSw, 10000);
       }
       // 체험 시작 시간
     } else if (key === "size") {

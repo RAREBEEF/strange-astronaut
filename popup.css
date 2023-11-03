@@ -1,7 +1,6 @@
 @font-face {
-  font-family: "Orbit"; /* 폰트 패밀리 이름을 지정합니다. */
-  src: url("./src/font/Orbit-Regular.ttf") format("truetype"); /* 폰트 파일 경로를 지정합니다. */
-  /* 다른 포맷도 지원할 경우 여러 개의 src를 지정할 수 있습니다. */
+  font-family: "Orbit";
+  src: url("./src/font/Orbit-Regular.ttf") format("truetype");
 }
 
 html,
@@ -171,13 +170,15 @@ button {
   opacity: 1;
 }
 
-#customize-wrapper {
+.customize-wrapper {
   display: flex;
   flex-direction: column;
   border: 1px solid black;
+  width: 100%;
 }
 
-#customize-wrapper #customize-size {
+.customize-wrapper .customize-size,
+.customize-wrapper .customize-dot-count {
   display: flex;
   align-items: center;
   gap: 10px;

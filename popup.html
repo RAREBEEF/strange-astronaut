@@ -39,12 +39,34 @@
           </button>
         </section>
 
-        <section id="customize-wrapper">
-          <label id="customize-size" for="#customize-size-input"
-            >크기 조절<input id="customize-size-input" type="range"
-          /></label>
+        <section id="customize-wrapper-ko" class="customize-wrapper">
+          <label class="customize-size" for="customize-size-input-ko"
+            >크기 조절<input
+              id="customize-size-input-ko"
+              class="customize-size-input"
+              type="range"
+              min="40"
+              max="200"
+              value="100"
+            />
+            <p class="size-indicator">100%</p></label
+          >
 
-          <label>비행사 선택</label>
+          <label class="customize-dot-count" for="customize-dot-count-input-ko"
+            ><input
+              id="allow-dots-custom-input-ko"
+              class="allow-dots-custom-input"
+              type="checkbox"
+            />고정점 수<input
+              id="customize-dot-count-input-ko"
+              class="customize-dot-count-input"
+              type="range"
+              value="20"
+              max="50"
+              min="10"
+            />
+            <p class="dot-count-indicator">20</p></label
+          >
         </section>
 
         <div id="app-unavailable">LOCKED</div>
