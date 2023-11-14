@@ -1,4 +1,33 @@
 let IS_PAID = false;
+let ENABLED = true;
+let TIMER_START_AT = null;
+let TIMER_INTERVAL = null;
+
+function startTimer() {
+  if (!TIMER_INTERVAL) {
+    const now = Date.now();
+    updateStorageItem({ timerStartAt: now });
+
+    TIMER_START_AT = now;
+    TIMER_INTERVAL = setInterval(() => {
+      console.log(TIMER_START_AT, "back");
+      const remain = (30000 + TIMER_START_AT - Date.now()) / 1000;
+      if (remain <= 0) {
+        shutdownTimer();
+        updateStorageItem({ enabled: false });
+      }
+    }, 1000);
+  }
+}
+
+function shutdownTimer() {
+  if (!!TIMER_INTERVAL) {
+    clearInterval(TIMER_INTERVAL);
+
+    TIMER_INTERVAL = null;
+    TIMER_START_AT = null;
+  }
+}
 
 // 초기화
 async function init() {
@@ -11,23 +40,42 @@ async function init() {
     }
   });
 
+  // 토글 여부 초기화
+  await getStorageItem("enabled", (result) => {
+    if (Object.keys(result).length <= 0) {
+      updateStorageItem({ enabled: false });
+      ENABLED = false;
+    } else if (result.enabled === true) {
+      ENABLED = true;
+    } else {
+      ENABLED = false;
+    }
+  });
+
   updateAppStatus();
 }
 
 // 앱 상태 체크
-function updateAppStatus() {}
+function updateAppStatus() {
+  if (IS_PAID) {
+    shutdownTimer();
+    return;
+  } else if (ENABLED) {
+    startTimer();
+  } else {
+    shutdownTimer();
+  }
+}
 
 // 결제 여부 및 체험 종료 감시
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   for (const key in changes) {
     if (key === "isPaid") {
       const isPaid = changes[key].newValue;
-
-      if (isPaid) {
-        IS_PAID = true;
-      } else {
-        IS_PAID = false;
-      }
+      IS_PAID = isPaid;
+    } else if (key === "enabled") {
+      const enabled = changes[key].newValue;
+      ENABLED = enabled;
     }
   }
 
@@ -45,26 +93,26 @@ chrome.runtime.onMessage.addListener(async function (
   }
 
   if (message.openPayment) {
-    openPayment();
+    openPayment(sendResponse);
   } else if (message.paymentComplete) {
     paymentComplete(sendResponse);
+  } else if (message.timerStartAt) {
+    sendResponse(TIMER_START_AT);
+  } else if (message.swKeepAlive) {
+    sendResponse("sw online");
   }
 });
 
 // 팝업 열기
-function openPayment() {
+function openPayment(sendResponse) {
   let openPopupStatus = true;
   try {
-    try {
-      chrome.windows.create({
-        url: `https://b064zwg6-5500.asse.devtunnels.ms/index.html?eid=${chrome.runtime.id}`,
-        width: 800,
-        height: 1000,
-        type: "popup",
-      });
-    } catch (e) {
-      console.log(e);
-    }
+    chrome.windows.create({
+      url: `http://localhost:3000/payment`,
+      width: 800,
+      height: 1000,
+      type: "popup",
+    });
   } catch (error) {
     openPopupStatus = false;
   } finally {
@@ -74,22 +122,18 @@ function openPayment() {
 
 // 결제 완료
 function paymentComplete(responseSender) {
-  responseSender("결제 확인 완료");
   updateStorageItem({ isPaid: true });
+  responseSender("Payment confirmed at background.");
 }
 
 function updateStorageItem(item) {
   chrome.storage.sync.set(item);
 }
 
-async function getStorageItem(key, callback = () => null) {
-  let res = null;
+async function getStorageItem(key, callback = (result) => result) {
   await chrome.storage.sync.get([key], (result) => {
     callback(result);
-    res = result;
   });
-
-  return res;
 }
 
 init();

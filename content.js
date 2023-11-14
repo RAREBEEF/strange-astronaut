@@ -14,6 +14,8 @@ cvs.style.left = 0;
 cvs.style.pointerEvents = "none";
 cvs.style.zIndex = 10000;
 cvs.style.transform = "translate3d(-100vw,-100vh,0)";
+cvs.style.maxHeight = "200vh";
+cvs.style.maxWidth = "200vw";
 // 뷰포트의 2배 크기인 캔버스를 0.5배율로 조절해 사이즈를 맞춤
 cvs.style.scale = "0.5";
 
@@ -23,6 +25,7 @@ const RIGHT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/s
 
 // variable
 let isPaid = false;
+let timerStartAt = null;
 let enablePizza = false;
 let dots = {};
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
@@ -501,7 +504,7 @@ const draw = () => {
     }
   }
 
-  // 머리
+  // 머리 및 타이머
   const headImg = new Image();
   const headToRight = !!feet && feet[0].trackingMouse;
   headImg.src = chrome.runtime.getURL(
@@ -528,6 +531,19 @@ const draw = () => {
       0
     );
   });
+
+  !isPaid &&
+    drawCommands3.push((ctx) => {
+      const [H, M, S] = secToHMS(
+        Math.round((30000 + timerStartAt - Date.now()) / 1000)
+      );
+      const text = `${M.toString().padStart(2, "0")}:${Math.round(S)
+        .toString()
+        .padStart(2, "0")}`;
+      ctx.fillStyle = "black";
+      ctx.font = "24px monospace";
+      ctx.fillText(text, bodyX - bodyWidth * 2.1, bodyY - bodyHeight * 1.5);
+    });
 
   // 마우스 커서
   if (enablePizza) {
@@ -592,11 +608,18 @@ const windowResizeHandler = () => {
   createDots(newCvsSize);
 };
 
-const windowMouseMoveHandler = (e) => {
+const mouseMoveHandler = (e) => {
   document.body.style.cursor = enablePizza ? "none" : "auto";
   // 캔버스를 0.5배율 했기 때문에 마우스의 위치는 2배율된 좌표로 계산
   mousePos = [e.clientX * 2, e.clientY * 2];
 };
+
+let swKeepAliveInterval = null;
+function swKeepAlive() {
+  sendMessage({ swKeepAlive: true }, (res) => {
+    console.log(res);
+  });
+}
 
 const enable = () => {
   windowResizeHandler();
@@ -608,24 +631,36 @@ const enable = () => {
 
     if (innerWidth * 0.8 <= offsetWidth && innerHeight * 0.8 <= offsetHeight) {
       const iframeDoc = iframe.contentDocument;
-      appendTarget = iframeDoc.body;
-      mouseMoveTarget = iframeDoc.body;
+
+      if (!iframeDoc || !iframeDoc.body) {
+        appendTarget = document.body;
+        mouseMoveTarget = document.body;
+      } else {
+        appendTarget = iframeDoc.body;
+        mouseMoveTarget = iframeDoc.body;
+      }
       break;
     } else {
       continue;
     }
   }
+
   appendTarget.appendChild(cvs);
   window.addEventListener("resize", windowResizeHandler);
-  mouseMoveTarget.addEventListener("mousemove", windowMouseMoveHandler);
+  mouseMoveTarget.addEventListener("mousemove", mouseMoveHandler);
 
   updateAndDraw();
+  if (!isPaid) {
+    swKeepAliveInterval ??= setInterval(swKeepAlive, 10000);
+  }
 };
 const disable = () => {
   cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", windowResizeHandler);
-  mouseMoveTarget.removeEventListener("mousemove", windowMouseMoveHandler);
-  appendTarget.getElementById("Strange_Astronaut").remove();
+  mouseMoveTarget.removeEventListener("mousemove", mouseMoveHandler);
+  cvs.remove();
+  clearInterval(swKeepAliveInterval);
+  swKeepAliveInterval = null;
 };
 
 const DOT_SORT = (dots) => {
@@ -682,33 +717,38 @@ const customizeDots = (dotCount) => {
 };
 
 // 프로그램 토글 여부 초기화
-chrome.storage.sync.get(["enabled"], (result) => {
+getStorageItem("enabled", (result) => {
   if (Object.keys(result).length <= 0 || result.enabled === true) {
     enable();
   }
 });
 // 피자 커서 활성화 여부 초기화
-chrome.storage.sync.get(["pizza"], (result) => {
+getStorageItem("pizza", (result) => {
   if (Object.keys(result).length > 0 && result.pizza === true) {
     enablePizza = true;
   }
 });
 // 결제 여부 초기화
-chrome.storage.sync.get(["isPaid"], (result) => {
+getStorageItem("isPaid", (result) => {
   if (Object.keys(result).length > 0 && result.isPaid === true) {
     isPaid = true;
   }
 });
 // 사이즈 초기화
-chrome.storage.sync.get(["size"], (result) => {
+getStorageItem("size", (result) => {
   if (Object.keys(result).length > 0) {
     customizeSize(result.size);
   }
 });
 // 고정점 개수 초기화
-chrome.storage.sync.get(["dotCount"], (result) => {
+getStorageItem("dotCount", (result) => {
   if (Object.keys(result).length > 0) {
     customizeDots(result.dotCount);
+  }
+});
+getStorageItem("timerStartAt", (result) => {
+  if (Object.keys(result).length > 0) {
+    timerStartAt = result.timerStartAt;
   }
 });
 
@@ -736,8 +776,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
       const status = changes[key].newValue;
       if (status === true) {
         isPaid = true;
-        clearInterval(checkSwInterval);
-        checkSwInterval = null;
       } else {
         isPaid = false;
       }
@@ -748,6 +786,9 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     } else if (key === "dotCount") {
       const dotCount = changes[key].newValue;
       customizeDots(dotCount);
+    } else if (key === "timerStartAt") {
+      const startAt = changes[key].newValue;
+      timerStartAt = startAt;
     }
   }
 });
@@ -757,29 +798,55 @@ const receivePaymentData = (e) => {
   // 보안 검사
   if (
     e.origin !== window.location.origin ||
-    e.origin.indexOf("https://b064zwg6-5500.asse.devtunnels.ms") <= -1 ||
-    e.data.extensionId !== chrome.runtime.id
+    e.origin.indexOf("localhost:3000") <= -1
   ) {
     return;
   }
 
   // 결제 데이터
   const paymentData = e.data;
-  console.log("at content.js", paymentData);
+  console.log("content has received payment data.", paymentData);
 
   // 결제가 성공한 경우
+  // TODO: 검증 과정 추가하기
   if (paymentData.status === "DONE") {
     // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
-    chrome.runtime.sendMessage({ paymentComplete: true }, function (res) {
+    sendMessage({ paymentComplete: true }, function (res) {
       console.log(res);
       // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
       // TODO: 결제 팝업에서 답장 수신 후 처리하기
-      window.postMessage(
-        "처리 완료",
-        "https://b064zwg6-5500.asse.devtunnels.ms"
-      );
+      window.postMessage("Payment confirmed.", "http://localhost:3000/");
     });
   }
 };
+
+function secToHMS(sec) {
+  const hour = Math.max(Math.floor(sec / 3600), 0);
+  const minute = Math.min(Math.max(Math.floor((sec % 3600) / 60), 0), 59);
+  const second = Math.min(Math.max(sec % 60, 0), 59);
+  return [hour, minute, second];
+}
+
+function updateStorageItem(item) {
+  chrome.storage.sync.set(item);
+}
+
+function removeStorageItem(item) {
+  chrome.storage.sync.remove(item);
+}
+
+async function getStorageItem(key, callback = () => null) {
+  let res = null;
+  await chrome.storage.sync.get([key], (result) => {
+    callback(result);
+    res = result;
+  });
+
+  return res;
+}
+
+function sendMessage(message, callback = () => null) {
+  chrome.runtime.sendMessage(message, (res) => callback(res));
+}
 
 window.addEventListener("message", receivePaymentData);

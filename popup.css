@@ -29,90 +29,94 @@ button {
 #container {
   position: relative;
   box-sizing: border-box;
-  width: 300px;
+  width: 350px;
   height: 500px;
-  margin: 2.5px;
-  border: 1px solid lightgray;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  overflow: scroll;
+  padding: 20px;
 }
 
 .header-wrapper {
   text-align: center;
+  margin-bottom: 20px;
 }
 
 .header-wrapper #header-en {
   font-size: 24px;
   font-weight: 700;
-  margin: 15px 0px;
+  background-color: black;
+  padding-bottom: 6px;
 }
 
-#trial-wrapper {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-#trial-wrapper #trial-timer-header {
-}
-#trial-wrapper #trial-timer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-#trial-wrapper #trial-timer #timer-hour,
-#trial-wrapper #trial-timer #timer-minute,
-#trial-wrapper #trial-timer #timer-second,
-#trial-wrapper #trial-timer .timer-colon {
-  font-size: 24px;
+.header {
+  color: white;
+  text-shadow: 1px 1px #adff2f, 2px 2px #ff1818, 3px 3px #1f51ff;
 }
 
-#trial-wrapper #trial-timer .timer-colon {
-  user-select: none;
-}
-
-#app-control {
+.card {
   position: relative;
-  width: 90%;
-  flex-grow: 1;
-  border: 1px solid gray;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
+  border: 1px solid black;
+  padding: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
 }
 
-#app-unavailable {
+.card .header {
+  position: relative;
+  display: block;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding-left: 5px;
+  padding-bottom: 4px;
+  background-color: black;
+}
+
+.card .header .header-shadow {
+  color: red;
+  font-size: 16px;
+  font-weight: 700;
   position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  font-size: 24px;
-  background-color: rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(1px);
+  bottom: 3px;
+  left: 7px;
 }
 
-#toggle-btn-wrapper {
-  /* flex-grow: 1; */
+#toggle-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+#timer-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  padding-bottom: 0px;
+}
+#timer-wrapper .timer-description {
+  font-size: 12px;
+  text-align: center;
+}
+#timer-wrapper #timer {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  width: 100%;
-  border: 1px solid red;
+}
+#timer-wrapper #timer #timer-minute,
+#timer-wrapper #timer #timer-second,
+#timer-wrapper #timer .timer-colon {
+  font-size: 24px;
+}
+
+#timer-wrapper #timer .timer-colon {
+  user-select: none;
 }
 
 #toggle-label {
   color: gray;
   font-size: 16px;
-  margin-bottom: 5px;
 }
 
 #toggle-btn {
@@ -127,6 +131,8 @@ button {
   width: 54px;
   height: 24px;
   padding: 0;
+  margin-top: 10px;
+  align-self: center;
 }
 
 #toggle-btn .switch {
@@ -170,30 +176,18 @@ button {
   opacity: 1;
 }
 
-.customize-wrapper {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid black;
-  width: 100%;
-}
-
-.customize-wrapper .customize-size,
-.customize-wrapper .customize-dot-count {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 #payment-wrapper {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  flex-grow: 1;
-  margin-bottom: 25px;
 }
 
 #payment-wrapper .payment-locale-wrapper {
   text-align: center;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 #payment-wrapper .payment-locale-wrapper .description-wrapper {
@@ -206,15 +200,18 @@ button {
 #payment-wrapper
   .payment-locale-wrapper
   .description-wrapper
-  #payment-description {
+  .payment-description {
   padding: 0;
   margin: 0;
-  color: gray;
+  font-size: 12px;
 }
 
 #payment-wrapper .payment-locale-wrapper .btn-wrapper {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: 5px;
 }
 
 #payment-wrapper .payment-locale-wrapper .btn-wrapper .payment-btn {
@@ -287,9 +284,68 @@ button {
   font-weight: 500;
 }
 
+#payment-wrapper .payment-locale-wrapper .btn-wrapper .restore-payment {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 0;
+  height: fit-content;
+}
+
+#fee-for-section {
+  position: relative;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 500px;
+}
+
+#fee-for-section #locker {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(1px);
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: black;
+}
+
+.customize-locale-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 100%;
+  height: 100%;
+}
+
+.customize-locale-wrapper .customize-size,
+.customize-locale-wrapper .customize-dot-count {
+  display: flex;
+  align-items: center;
+}
+
+.lang-select-wrapper {
+}
+
+.lang-select-wrapper #lang-select {
+  margin-top: 10px;
+}
+
+.footer {
+  padding: 20px 10px 0px;
+}
+
 .footer p {
   color: gray;
   text-align: center;
-  padding: 5px;
   font-size: 11px;
+  padding-bottom: 10px;
 }

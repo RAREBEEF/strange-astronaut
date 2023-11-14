@@ -115,7 +115,7 @@ function openPayment() {
   try {
     try {
       chrome.windows.create({
-        url: `https://b064zwg6-5500.asse.devtunnels.ms/index.html?eid=${chrome.runtime.id}`,
+        url: `http://127.0.0.1:5500/index.html?eid=${chrome.runtime.id}`,
         width: 800,
         height: 1000,
         type: "popup",

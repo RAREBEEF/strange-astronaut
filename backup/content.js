@@ -750,7 +750,7 @@ const receivePaymentData = (e) => {
   // 보안 검사
   if (
     e.origin !== window.location.origin ||
-    e.origin.indexOf("https://b064zwg6-5500.asse.devtunnels.ms") <= -1 ||
+    e.origin.indexOf("http://127.0.0.1:5500/") <= -1 ||
     e.data.extensionId !== chrome.runtime.id
   ) {
     return;
@@ -767,10 +767,7 @@ const receivePaymentData = (e) => {
       console.log(res);
       // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
       // TODO: 결제 팝업에서 답장 수신 후 처리하기
-      window.postMessage(
-        "처리 완료",
-        "https://b064zwg6-5500.asse.devtunnels.ms"
-      );
+      window.postMessage("처리 완료", "http://127.0.0.1:5500/");
     });
   }
 };
