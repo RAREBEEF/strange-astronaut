@@ -13,37 +13,30 @@
       </hgroup>
 
       <section id="toggle-wrapper" class="card">
-        <label for="toggle-btn" class="header header">ON/OFF</label>
-        <div id="timer-wrapper">
-          <p id="timer-description-ko" class="timer-description">
-            30초마다 자동 종료(무료 평가판)
-          </p>
-          <p id="timer-description-en" class="timer-description">
-            Auto off at 30 second intervals (trial version)
-          </p>
-          <div id="timer">
-            <p id="timer-minute">00</p>
-            <p class="timer-colon">:</p>
-            <p id="timer-second">30</p>
+        <label for="toggle-btn" class="card-header">ON/OFF</label>
+        <div class="card-content">
+          <div id="timer-wrapper">
+            <p id="timer-description">30초마다 자동 종료(무료 평가판)</p>
+            <div id="timer">
+              <p id="timer-minute">00</p>
+              <p class="timer-colon">:</p>
+              <p id="timer-second">30</p>
+            </div>
           </div>
+          <button id="toggle-btn">
+            <div class="switch">
+              <div class="switch__dot"></div>
+              <div class="switch__bg"></div>
+            </div>
+          </button>
         </div>
-        <!-- <label id="toggle-label" for="toggle-btn">off/on</label> -->
-        <button id="toggle-btn">
-          <div class="switch">
-            <div class="switch__dot"></div>
-            <div class="switch__bg"></div>
-          </div>
-        </button>
       </section>
 
       <section id="payment-wrapper" class="card">
-        <h3 class="header">
-          GET PREMIUM
-          <!-- <div class="header-shadow">GET PREMIUM</div> -->
-        </h3>
-        <div id="payment-ko" class="payment-locale-wrapper">
+        <h3 class="card-header">GET PREMIUM</h3>
+        <div class="card-content">
           <div class="description-wrapper">
-            <p class="payment-description">
+            <p id="payment-description">
               우주왕복선을 호출해 우주비행사의 친구들을 시간 제한 없이 이용해
               보세요.
             </p>
@@ -51,35 +44,20 @@
           <div class="btn-wrapper">
             <button class="payment-btn">
               <p class="icon">🚀</p>
-              <p class="text">우주왕복선 호출하기</p>
+              <p id="payment-btn-text" class="text">우주왕복선 호출하기</p>
             </button>
-            <button class="restore-payment">구매 복원</button>
-          </div>
-        </div>
-
-        <div id="payment-en" class="payment-locale-wrapper">
-          <div class="description-wrapper">
-            <p class="payment-description">
-              Call the space shuttle and try the astronaut's friends with no
-              time limit.
-            </p>
-          </div>
-          <div class="btn-wrapper">
-            <button class="payment-btn">
-              <p class="icon">🚀</p>
-              <p class="text">Calling Space Shuttle</p>
-              <button class="restore-payment">restore payment</button>
-            </button>
+            <button id="restore-btn" class="restore-payment">구매 복원</button>
           </div>
         </div>
       </section>
 
       <section id="fee-for-section" class="card">
-        <h3 class="header">CUSTOMIZE</h3>
-        <section id="customize-ko" class="customize-locale-wrapper">
-          <label class="customize-size" for="customize-size-input-ko"
-            >크기 조절<input
-              id="customize-size-input-ko"
+        <h3 class="card-header">CUSTOMIZE</h3>
+        <div class="card-content">
+          <label id="customize-size" for="customize-size-input"
+            ><p id="customize-size-label">크기 조절</p>
+            <input
+              id="customize-size-input"
               class="customize-size-input"
               type="range"
               min="40"
@@ -88,12 +66,14 @@
             />
             <p class="size-indicator">100%</p></label
           >
-          <label class="customize-dot-count" for="customize-dot-count-input-ko"
+          <label id="customize-dot-count" for="customize-dot-count-input-ko"
             ><input
               id="allow-dots-custom-input-ko"
               class="allow-dots-custom-input"
               type="checkbox"
-            />고정점 수<input
+            />
+            <p id="customize-dot-count-label">고정점 수</p>
+            <input
               id="customize-dot-count-input-ko"
               class="customize-dot-count-input"
               type="range"
@@ -103,69 +83,33 @@
             />
             <p class="dot-count-indicator">20</p></label
           >
-        </section>
-        <section id="customize-en" class="customize-locale-wrapper">
-          <label class="customize-size" for="customize-size-input-en"
-            >SIZE<input
-              id="customize-size-input-en"
-              class="customize-size-input"
-              type="range"
-              min="40"
-              max="200"
-              value="100"
-            />
-            <p class="size-indicator">100%</p></label
-          >
-          <label class="customize-dot-count" for="customize-dot-count-input-en"
-            ><input
-              id="allow-dots-custom-input-en"
-              class="allow-dots-custom-input"
-              type="checkbox"
-            />DOT COUNT<input
-              id="customize-dot-count-input-en"
-              class="customize-dot-count-input"
-              type="range"
-              value="20"
-              max="50"
-              min="10"
-            />
-            <p class="dot-count-indicator">20</p></label
-          >
-        </section>
+        </div>
         <div id="locker">PREMIUM REQUIRE</div>
       </section>
 
       <section class="lang-select-wrapper card">
-        <label for="lang-select" class="header">Language</label>
-        <select id="lang-select">
-          <option value="default">🌐 Default</option>
-          <option value="en">🇬🇧 English</option>
-          <option value="ko">🇰🇷 한국어</option>
-        </select>
+        <label for="lang-select" class="card-header">Language</label>
+        <div class="card-content">
+          <select id="lang-select">
+            <option value="default">🌐 Default</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="ko">🇰🇷 한국어</option>
+          </select>
+        </div>
       </section>
 
-      <footer id="footer-ko" class="footer">
-        <p>첫 설치 시 새로고침이 필요할 수 있습니다.</p>
-        <p>
-          &copy; 2023. RAREBEEF All Rights Reserved.<br />
+      <footer id="footer">
+        <p>&copy; 2023. RAREBEEF All Rights Reserved.</p>
+        <p id="copyright">
           &quot;Strange Astronaut&quot;과 관련된 모든 캐릭터와 자산은
           &quot;RAREBEEF&quot;의 지적재산권에 속합니다.
         </p>
       </footer>
-
-      <footer id="footer-en" class="footer">
-        <p>The first installation may require a refresh.</p>
-        <p>
-          &copy; 2023. RAREBEEF All Rights Reserved.<br />
-          all characters and assets related to &quot;Strange Astronaut&quot;
-          belong to the intellectual property rights of &quot;RAREBEEF&quot;.
-        </p>
-      </footer>
     </main>
 
-    <section class="debug-wrapper">
+    <!-- <section class="debug-wrapper">
       <button id="reset-btn">스토리지 초기화</button>
       <button id="paid-btn">결제 완료</button>
-    </section>
+    </section> -->
   </body>
 </html>

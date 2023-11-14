@@ -47,22 +47,26 @@ let limbsWidth = bodyWidth * 0.8;
 
 const createDots = (cvsSize) => {
   dots = {};
-  const [cvsWidth, cvsHeight] = cvsSize;
+  let [cvsWidth, cvsHeight] = cvsSize;
   cvs.width = cvsWidth;
   cvs.height = cvsHeight;
   offscreenCvs.width = cvsWidth;
   offscreenCvs.height = cvsHeight;
 
   const areas = [];
+  // const areaWidth = (cvsWidth - areaGap * (areaDivide)) / areaDivide;
+  // const areaHeight = (cvsHeight - areaGap * areaDivide) / areaDivide;
   const areaWidth = (cvsWidth - areaGap * areaDivide) / areaDivide;
   const areaHeight = (cvsHeight - areaGap * areaDivide) / areaDivide;
 
-  for (let i = 1; i <= areaDivide; i++) {
-    const startY = areaGap / 2 + (areaHeight + areaGap) * (i - 1);
+  for (let i = 1; i <= areaDivide + 2; i++) {
+    const startY =
+      areaGap / 2 + (areaHeight + areaGap) * (i - 1) - (areaWidth + areaGap);
     const endY = startY + areaHeight;
 
-    for (let j = 1; j <= areaDivide; j++) {
-      const startX = areaGap / 2 + (areaWidth + areaGap) * (j - 1);
+    for (let j = 1; j <= areaDivide + 2; j++) {
+      const startX =
+        areaGap / 2 + (areaWidth + areaGap) * (j - 1) - (areaWidth + areaGap);
       const endX = startX + areaWidth;
 
       areas.push({
@@ -152,10 +156,10 @@ const updateFeet = () => {
     sortedQuadrant3 = DOT_SORT(quadrant3),
     sortedQuadrant4 = DOT_SORT(quadrant4);
 
-  const nearDot1 = sortedQuadrant1[0]?.id || sortedQuadrant3[1]?.id,
-    nearDot2 = sortedQuadrant2[0]?.id || sortedQuadrant4[1]?.id,
-    nearDot3 = sortedQuadrant3[0]?.id || sortedQuadrant1[1]?.id,
-    nearDot4 = sortedQuadrant4[0]?.id || sortedQuadrant2[1]?.id,
+  const nearDot1 = sortedQuadrant1[0]?.id,
+    nearDot2 = sortedQuadrant2[0]?.id,
+    nearDot3 = sortedQuadrant3[0]?.id,
+    nearDot4 = sortedQuadrant4[0]?.id,
     nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
 
   let newFeet = feet;

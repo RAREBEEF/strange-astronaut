@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "extpay": "^3.0.7"
+    "extpay": "^3.0.7",
+    "i18next": "^23.7.6"
   }
 }

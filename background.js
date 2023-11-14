@@ -44,6 +44,11 @@ async function init() {
   await getStorageItem("enabled", (result) => {
     if (Object.keys(result).length <= 0) {
       updateStorageItem({ enabled: false });
+      chrome.tabs.query({ active: false, currentWindow: true }, (tabs) => {
+        tabs.forEach((tab) => {
+          chrome.tabs.reload(tab.id);
+        });
+      });
       ENABLED = false;
     } else if (result.enabled === true) {
       ENABLED = true;

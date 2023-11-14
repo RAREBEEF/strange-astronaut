@@ -19,7 +19,9 @@
       "resources": [
         "images/original_character.png",
         "images/original_character_reverse.png",
-        "images/pizza.png"
+        "images/pizza.png",
+        "locales/en/translate.json",
+        "locales/ko/translate.json"
       ]
     }
   ],

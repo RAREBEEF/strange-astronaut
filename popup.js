@@ -4,29 +4,20 @@ let TIMER_INTERVAL = null;
 let ALLOW_DOTS_CUSTOM = false;
 let DOT_COUNT = 20;
 let SIZE_RATIO = 100;
-const LOCALE_TEXTS = {
-  paymentPopup: {
-    success:
-      "팝업 15호가 곧 도착합니다.\n탑승 후 결제를 진행하여 우주비행사를 도와주세요.",
-    fail: "팝업 15호 호출에 실패하였습니다.\n아무래도 은하간 통신 시스템에 문제가 있거나 팝업 차단 시스템에 감지된 모양입니다.",
-  },
-};
 
 const DOMContentLoadedHandler = async () => {
   // ELEMENTS
   // // 언어 관련
   const langSelect = document.getElementById("lang-select");
-  const paymentKo = document.getElementById("payment-ko");
-  const footerKo = document.getElementById("footer-ko");
-  const timerDescriptionKo = document.getElementById("timer-description-ko");
-  const paymentEn = document.getElementById("payment-en");
-  const footerEn = document.getElementById("footer-en");
-  const timerDescriptionEn = document.getElementById("timer-description-en");
-  const customizeKo = document.getElementById("customize-ko");
-  const customizeEn = document.getElementById("customize-en");
+  const timerDescription = document.getElementById("timer-description");
+  const paymentDescription = document.getElementById("payment-description");
+  const paymentBtnText = document.getElementById("payment-btn-text");
+  const restoreBtn = document.getElementById("restore-btn");
+  const customizeSizeLabel = document.getElementById("customize-size-label");
+  const customizeDotCountLabel = document.getElementById("customize-dot-count");
+  const copyright = document.getElementById("copyright");
   // // 토글
   const toggleBtn = document.getElementById("toggle-btn");
-  const toggleUnavailable = document.getElementById("app-unavailable");
   // // 타이머
   const timerWrapper = document.getElementById("timer-wrapper");
   const timerMinute = document.getElementById("timer-minute");
@@ -50,14 +41,19 @@ const DOMContentLoadedHandler = async () => {
     "allow-dots-custom-input"
   );
 
-  // 언어 초기화 및 설정
+  // 언어 초기화
+  // ko en default
   getStorageItem("lang", (result) => {
-    let lang = "default";
+    let lang = navigator.language || navigator.userLanguage;
 
     if (result.lang === "ko") {
       lang = "ko";
+      langSelect.value = "ko";
     } else if (result.lang === "en") {
       lang = "en";
+      langSelect.value = "en";
+    } else {
+      langSelect.value = "default";
     }
 
     changeLang(lang);
@@ -69,38 +65,23 @@ const DOMContentLoadedHandler = async () => {
     changeLang(lang);
   });
 
-  function changeLang(lang) {
-    let userLanguage = navigator.language || navigator.userLanguage;
-    if (lang === "default") {
-      langSelect.value = "default";
-    } else {
-      userLanguage = lang;
-      langSelect.value = lang;
+  async function changeLang(lang) {
+    if (lang !== "en" && lang !== "ko") {
+      lang = "en";
     }
 
-    if (userLanguage.startsWith("ko")) {
-      paymentEn.style.display = "none";
-      footerEn.style.display = "none";
-      timerDescriptionEn.style.display = "none";
-      customizeEn.style.display = "none";
-      paymentKo.style.display = "flex";
-      footerKo.style.display = "block";
-      timerDescriptionKo.style.display = "block";
-      customizeKo.style.display = "flex";
-    } else {
-      paymentKo.style.display = "none";
-      footerKo.style.display = "none";
-      timerDescriptionKo.style.display = "none";
-      customizeKo.style.display = "none";
-      paymentEn.style.display = "flex";
-      footerEn.style.display = "block";
-      timerDescriptionEn.style.display = "block";
-      customizeEn.style.display = "flex";
-      LOCALE_TEXTS.paymentPopup.fail =
-        "Failed to open the payment pop-up window. Please check your Internet connection or pop-up settings.";
-      LOCALE_TEXTS.paymentPopup.success =
-        "A pop-up window will open. Continue payment in the pop-up window.";
-    }
+    const translateUrl = chrome.runtime.getURL(
+      `locales/${lang}/translate.json`
+    );
+    const translate = await fetch(translateUrl).then((res) => res.json());
+
+    timerDescription.textContent = translate.toggle.timer.description;
+    paymentDescription.textContent = translate.payment.description;
+    paymentBtnText.textContent = translate.payment.btn;
+    restoreBtn.textContent = translate.payment.restore;
+    customizeSizeLabel.textContent = translate.customize.size;
+    customizeDotCountLabel.textContent = translate.customize.dotCount;
+    copyright.textContent = translate.footer.copyright;
   }
 
   // 앱 상태 체크
@@ -142,25 +123,25 @@ const DOMContentLoadedHandler = async () => {
     if (!!TIMER_INTERVAL) {
       clearInterval(TIMER_INTERVAL);
       TIMER_INTERVAL = null;
-      timerSecond.textContent = "30";
       timerMinute.textContent = "00";
+      timerSecond.textContent = "30";
     }
   }
 
   // 초기화 함수
   async function init() {
     // 결제 여부 초기화
-    await getStorageItem("isPaid", (result) => {
-      paymentHandler(result.isPaid);
+    await getStorageItem("isPaid", async (result) => {
+      await paymentHandlerSync(result.isPaid);
     });
     // 토글 상태 초기화
-    await getStorageItem("enabled", (result) => {
+    await getStorageItem("enabled", async (result) => {
       if (Object.keys(result).length <= 0) {
-        disable();
+        await disableSync();
       } else if (result.enabled === true) {
-        enable();
+        await enableSync();
       } else {
-        disable();
+        await disableSync();
       }
     });
     // 커스텀 초기화
@@ -205,20 +186,20 @@ const DOMContentLoadedHandler = async () => {
   }
 
   // 스토리지 변경 감시
-  chrome.storage.onChanged.addListener(function (changes, namespace) {
+  chrome.storage.onChanged.addListener(async function (changes, namespace) {
     for (var key in changes) {
       // 토글 여부 감시
       if (key === "enabled") {
         if (changes[key].newValue === true) {
-          enable();
+          await enableSync();
         } else {
-          disable();
+          await disableSync();
         }
       } else if (key === "isPaid") {
         if (changes[key].newValue === true) {
-          paymentHandler(true);
+          await paymentHandlerSync(true);
         } else {
-          paymentHandler(false);
+          await paymentHandlerSync(false);
         }
       }
     }
@@ -227,50 +208,59 @@ const DOMContentLoadedHandler = async () => {
   });
 
   // 결제 여부에 따른 설정
-  function paymentHandler(isPaid) {
-    if (isPaid) {
-      IS_PAID = true;
-      paymentSection.style.display = "none";
-      locker.style.display = "none";
-      timerWrapper.style.display = "none";
-      shutdownTimer();
-      for (const customizeWrapper of customizeWrappers) {
-        customizeWrapper.style.pointerEvents = "all";
-      }
-    } else {
-      IS_PAID = false;
-      paymentSection.style.display = "flex";
-      locker.style.display = "flex";
-      timerWrapper.style.display = "flex";
-      for (const customizeWrapper of customizeWrappers) {
-        customizeWrapper.style.pointerEvents = "none";
-      }
-      // 결제 버튼
-      for (const btn of paymentBtns) {
-        btn.addEventListener("click", () => {
-          // 결제 팝업 열기 요청 메세지 전송
-          sendMessage({ openPayment: true }, (res) => {
-            // 팝업 오픈 실패 시
-            if (!res.success) {
-              alert(LOCALE_TEXTS.paymentPopup.fail);
-              console.log("Failed to open popup.");
-            } else {
-              console.log("Successfully opened a popup");
-            }
+  function paymentHandlerSync(isPaid) {
+    return new Promise((res, rej) => {
+      if (isPaid) {
+        IS_PAID = true;
+        paymentSection.style.display = "none";
+        locker.style.display = "none";
+        timerWrapper.style.display = "none";
+        shutdownTimer();
+        for (const customizeWrapper of customizeWrappers) {
+          customizeWrapper.style.pointerEvents = "all";
+        }
+      } else {
+        IS_PAID = false;
+        paymentSection.style.display = "flex";
+        locker.style.display = "flex";
+        timerWrapper.style.display = "flex";
+        for (const customizeWrapper of customizeWrappers) {
+          customizeWrapper.style.pointerEvents = "none";
+        }
+        // 결제 버튼
+        for (const btn of paymentBtns) {
+          btn.addEventListener("click", () => {
+            // 결제 팝업 열기 요청 메세지 전송
+            sendMessage({ openPayment: true }, (res) => {
+              // 팝업 오픈 실패 시
+              if (!res.success) {
+                console.log("Failed to open popup.");
+              } else {
+                console.log("Successfully opened a popup");
+              }
+            });
           });
-        });
+        }
       }
-    }
+
+      res(true);
+    });
   }
 
   // 활성화 설정
-  function enable() {
-    ENABLED = true;
-    toggleBtn.classList.add("enabled");
+  function enableSync() {
+    return new Promise((res, rej) => {
+      ENABLED = true;
+      toggleBtn.classList.add("enabled");
+      res(true);
+    });
   }
-  function disable() {
-    ENABLED = false;
-    toggleBtn.classList.remove("enabled");
+  function disableSync() {
+    return new Promise((res, rej) => {
+      ENABLED = false;
+      toggleBtn.classList.remove("enabled");
+      res(true);
+    });
   }
 
   // 토글 버튼 클릭 (스토리지만 업데이트하고 앱 상태 변경에는 관여하지 않음)
