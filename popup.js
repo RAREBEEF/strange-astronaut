@@ -1,11 +1,14 @@
-let IS_PAID = false;
-let ENABLED = true;
+let IS_PAID = null;
+let ENABLED = null;
 let TIMER_INTERVAL = null;
 let ALLOW_DOTS_CUSTOM = false;
 let DOT_COUNT = 20;
 let SIZE_RATIO = 100;
 
 const DOMContentLoadedHandler = async () => {
+  // HEADER
+  const headerImg = document.getElementById("header-img");
+  headerImg.src = chrome.runtime.getURL("src/images/logo.png");
   // ELEMENTS
   // // 언어 관련
   const langSelect = document.getElementById("lang-select");
@@ -13,8 +16,23 @@ const DOMContentLoadedHandler = async () => {
   const paymentDescription = document.getElementById("payment-description");
   const paymentBtnText = document.getElementById("payment-btn-text");
   const restoreBtn = document.getElementById("restore-btn");
+  const customizeMovementTypeLabel = document.getElementById(
+    "customize-movement-type-label"
+  );
   const customizeSizeLabel = document.getElementById("customize-size-label");
-  const customizeDotCountLabel = document.getElementById("customize-dot-count");
+  const customizeDotCountLabel = document.getElementById(
+    "customize-dot-count-label"
+  );
+  const customizeSkinDefaultLabel = document.getElementById(
+    "customize-skin-default-label"
+  );
+  const customizeSkinGlitchLabel = document.getElementById(
+    "customize-skin-glitch-label"
+  );
+  const termsOfUse = document.getElementById("termsOfUse");
+  const privacyPolicy = document.getElementById("privacyPolicy");
+  const refundBtn = document.getElementById("refund");
+
   const copyright = document.getElementById("copyright");
   // // 토글
   const toggleBtn = document.getElementById("toggle-btn");
@@ -24,39 +42,34 @@ const DOMContentLoadedHandler = async () => {
   const timerSecond = document.getElementById("timer-second");
   // // 결제
   const paymentSection = document.getElementById("payment-wrapper");
-  const paymentBtns = document.getElementsByClassName("payment-btn");
+  const paymentBtn = document.getElementById("payment-btn");
   // // 커스텀
   const locker = document.getElementById("locker");
-  const customizeWrappers =
-    document.getElementsByClassName("customize-wrapper");
-  const sizeInputs = document.getElementsByClassName("customize-size-input");
-  const sizeIndicators = document.getElementsByClassName("size-indicator");
-  const dotCountInputs = document.getElementsByClassName(
-    "customize-dot-count-input"
+  const sizeInput = document.getElementById("customize-size-input");
+  const sizeIndicator = document.getElementById("size-indicator");
+  const dotCountInput = document.getElementById("customize-dot-count-input");
+  const dotCountIndicator = document.getElementById("dot-count-indicator");
+  const allowDotsCustomInput = document.getElementById(
+    "customize-allow-dots-custom-input"
   );
-  const dotCountIndicators = document.getElementsByClassName(
-    "dot-count-indicator"
+  const defaultSkinThumb = document.getElementById("default-skin-thumb");
+  const glitchSkinThumb = document.getElementById("glitch-skin-thumb");
+  defaultSkinThumb.src = chrome.runtime.getURL(
+    "src/images/original_character_right.png"
   );
-  const allowDotsCustomInputs = document.getElementsByClassName(
-    "allow-dots-custom-input"
+  glitchSkinThumb.src = chrome.runtime.getURL(
+    `src/images/glitch_character_right_1.png`
   );
+  const skinForm = document.getElementById("customize-skin-wrapper");
+  const skinRadios = skinForm.elements["skin"];
+  const movementTypeForm = document.getElementById(
+    "customize-movement-type-wrapper"
+  );
+  const movementTypeRadios = movementTypeForm.elements["movement-type"];
 
   // 언어 초기화
-  // ko en default
   getStorageItem("lang", (result) => {
-    let lang = navigator.language || navigator.userLanguage;
-
-    if (result.lang === "ko") {
-      lang = "ko";
-      langSelect.value = "ko";
-    } else if (result.lang === "en") {
-      lang = "en";
-      langSelect.value = "en";
-    } else {
-      langSelect.value = "default";
-    }
-
-    changeLang(lang);
+    changeLang(result.lang);
   });
 
   langSelect.addEventListener("change", (e) => {
@@ -66,7 +79,21 @@ const DOMContentLoadedHandler = async () => {
   });
 
   async function changeLang(lang) {
-    if (lang !== "en" && lang !== "ko") {
+    if (!lang) {
+      const defaultLang = navigator.language || navigator.userLanguage;
+      if (defaultLang.startsWith("ko")) {
+        langSelect.value = "ko";
+        lang = "ko";
+        updateStorageItem({ lang: "ko" });
+      } else {
+        langSelect.value = "en";
+        lang = "en";
+        updateStorageItem({ lang: "en" });
+      }
+    } else if (lang.startsWith("ko")) {
+      langSelect.value = "ko";
+    } else {
+      langSelect.value = "en";
       lang = "en";
     }
 
@@ -74,20 +101,26 @@ const DOMContentLoadedHandler = async () => {
       `locales/${lang}/translate.json`
     );
     const translate = await fetch(translateUrl).then((res) => res.json());
-
     timerDescription.textContent = translate.toggle.timer.description;
     paymentDescription.textContent = translate.payment.description;
     paymentBtnText.textContent = translate.payment.btn;
     restoreBtn.textContent = translate.payment.restore;
+    customizeMovementTypeLabel.textContent = translate.customize.movementType;
     customizeSizeLabel.textContent = translate.customize.size;
     customizeDotCountLabel.textContent = translate.customize.dotCount;
+    customizeSkinDefaultLabel.textContent = translate.customize.skin.default;
+    customizeSkinGlitchLabel.textContent = translate.customize.skin.glitch;
     copyright.textContent = translate.footer.copyright;
+    termsOfUse.textContent = translate.footer.termsOfUse;
+    privacyPolicy.textContent = translate.footer.privacyPolicy;
+    refundBtn && (refundBtn.textContent = translate.footer.refund);
   }
 
-  // 앱 상태 체크
-  function updateAppStatus() {
-    if (IS_PAID) {
+  function updateTimerStatus() {
+    if (ENABLED === null || IS_PAID === null) {
       return;
+    } else if (IS_PAID) {
+      shutdownTimer();
     } else if (ENABLED) {
       startTimer();
     } else {
@@ -95,7 +128,7 @@ const DOMContentLoadedHandler = async () => {
     }
   }
 
-  async function startTimer() {
+  function startTimer() {
     if (!TIMER_INTERVAL) {
       timerSecond.textContent = "--";
       timerMinute.textContent = "";
@@ -103,12 +136,10 @@ const DOMContentLoadedHandler = async () => {
       let timerStartAt = null;
       sendMessage({ timerStartAt: true }, (res) => {
         timerStartAt = res;
-        console.log(res);
       });
 
       TIMER_INTERVAL = setInterval(() => {
-        const remain = (30000 + timerStartAt - Date.now()) / 1000;
-        console.log(timerStartAt, "popup");
+        const remain = (300000 + timerStartAt - Date.now()) / 1000;
         const [H, M, S] = secToHMS(remain);
         timerMinute.textContent = M.toString().padStart(2, "0");
         timerSecond.textContent = Math.round(S).toString().padStart(2, "0");
@@ -123,8 +154,8 @@ const DOMContentLoadedHandler = async () => {
     if (!!TIMER_INTERVAL) {
       clearInterval(TIMER_INTERVAL);
       TIMER_INTERVAL = null;
-      timerMinute.textContent = "00";
-      timerSecond.textContent = "30";
+      timerMinute.textContent = "05";
+      timerSecond.textContent = "00";
     }
   }
 
@@ -137,52 +168,62 @@ const DOMContentLoadedHandler = async () => {
     // 토글 상태 초기화
     await getStorageItem("enabled", async (result) => {
       if (Object.keys(result).length <= 0) {
-        await disableSync();
+        disable();
       } else if (result.enabled === true) {
-        await enableSync();
+        enable();
       } else {
-        await disableSync();
+        disable();
       }
     });
     // 커스텀 초기화
     // // 사이즈
-    await getStorageItem("size", (result) => {
+    getStorageItem("size", (result) => {
       if (Object.keys(result).length > 0) {
         SIZE_RATIO = result.size;
-        for (const input of sizeInputs) {
-          input.value = result.size;
-        }
-        for (const indicator of sizeIndicators) {
-          indicator.textContent = `${result.size}%`;
-        }
+        sizeInput.value = result.size;
+        sizeIndicator.textContent = `${result.size}%`;
       }
     });
     // // 고정점 변경 허용
-    await getStorageItem("allowDotsCustom", (result) => {
+    getStorageItem("allowDotsCustom", (result) => {
       const allowDotsCustom =
         Object.keys(result).length > 0 && result.allowDotsCustom === true;
-      ALLOW_DOTS_CUSTOM = result.allowDotsCustom;
-      for (const input of allowDotsCustomInputs) {
-        input.checked = allowDotsCustom;
-      }
-      for (const input of dotCountInputs) {
-        input.disabled = !allowDotsCustom;
-      }
+      ALLOW_DOTS_CUSTOM = allowDotsCustom;
+      allowDotsCustomInput.checked = allowDotsCustom;
+      dotCountInput.disabled = !allowDotsCustom;
     });
     // // 고정점
-    await getStorageItem("dotCount", (result) => {
+    getStorageItem("dotCount", (result) => {
       if (Object.keys(result).length > 0) {
         DOT_COUNT = result.dotCount;
-        for (const input of dotCountInputs) {
-          input.value = result.dotCount;
+        dotCountInput.value = result.dotCount;
+        dotCountIndicator.textContent = result.dotCount;
+      }
+    });
+    // // 스킨
+    getStorageItem("skin", (result) => {
+      const selectedSkin =
+        IS_PAID && Object.keys(result).length > 0 ? result.skin : "default";
+      for (let skinRadio of skinRadios) {
+        if (skinRadio.value === selectedSkin) {
+          skinRadio.checked = true;
+          break;
         }
-        for (const indicator of dotCountIndicators) {
-          indicator.textContent = result.dotCount;
+      }
+    });
+    // // 이동 방식
+    getStorageItem("movementType", (result) => {
+      const selectedType =
+        IS_PAID && Object.keys(result).length > 0 ? result.movementType : "A";
+      for (let movementTypeRadio of movementTypeRadios) {
+        if (movementTypeRadio.value === selectedType) {
+          movementTypeRadio.checked = true;
+          break;
         }
       }
     });
 
-    updateAppStatus();
+    updateTimerStatus();
   }
 
   // 스토리지 변경 감시
@@ -191,9 +232,9 @@ const DOMContentLoadedHandler = async () => {
       // 토글 여부 감시
       if (key === "enabled") {
         if (changes[key].newValue === true) {
-          await enableSync();
+          enable();
         } else {
-          await disableSync();
+          disable();
         }
       } else if (key === "isPaid") {
         if (changes[key].newValue === true) {
@@ -204,7 +245,7 @@ const DOMContentLoadedHandler = async () => {
       }
     }
 
-    updateAppStatus();
+    updateTimerStatus();
   });
 
   // 결제 여부에 따른 설정
@@ -215,32 +256,21 @@ const DOMContentLoadedHandler = async () => {
         paymentSection.style.display = "none";
         locker.style.display = "none";
         timerWrapper.style.display = "none";
-        shutdownTimer();
-        for (const customizeWrapper of customizeWrappers) {
-          customizeWrapper.style.pointerEvents = "all";
-        }
       } else {
         IS_PAID = false;
         paymentSection.style.display = "flex";
         locker.style.display = "flex";
         timerWrapper.style.display = "flex";
-        for (const customizeWrapper of customizeWrappers) {
-          customizeWrapper.style.pointerEvents = "none";
-        }
         // 결제 버튼
-        for (const btn of paymentBtns) {
-          btn.addEventListener("click", () => {
-            // 결제 팝업 열기 요청 메세지 전송
-            sendMessage({ openPayment: true }, (res) => {
-              // 팝업 오픈 실패 시
-              if (!res.success) {
-                console.log("Failed to open popup.");
-              } else {
-                console.log("Successfully opened a popup");
-              }
-            });
+        paymentBtn.addEventListener("click", () => {
+          // 결제 팝업 열기 요청 메세지 전송
+          sendMessage({ openPayment: true }, (res) => {
+            // 팝업 오픈 실패 시
+            if (!res.success) {
+            } else {
+            }
           });
-        }
+        });
       }
 
       res(true);
@@ -248,19 +278,13 @@ const DOMContentLoadedHandler = async () => {
   }
 
   // 활성화 설정
-  function enableSync() {
-    return new Promise((res, rej) => {
-      ENABLED = true;
-      toggleBtn.classList.add("enabled");
-      res(true);
-    });
+  function enable() {
+    ENABLED = true;
+    toggleBtn.classList.add("enabled");
   }
-  function disableSync() {
-    return new Promise((res, rej) => {
-      ENABLED = false;
-      toggleBtn.classList.remove("enabled");
-      res(true);
-    });
+  function disable() {
+    ENABLED = false;
+    toggleBtn.classList.remove("enabled");
   }
 
   // 토글 버튼 클릭 (스토리지만 업데이트하고 앱 상태 변경에는 관여하지 않음)
@@ -280,83 +304,127 @@ const DOMContentLoadedHandler = async () => {
   }
   function updateDotCount(dotCount) {
     DOT_COUNT = dotCount;
-    for (const dotCountInput of dotCountInputs) {
-      dotCountInput.value = DOT_COUNT;
-    }
-    for (const dotCountIndicator of dotCountIndicators) {
-      dotCountIndicator.textContent = DOT_COUNT;
-    }
+    dotCountInput.value = DOT_COUNT;
+    dotCountIndicator.textContent = DOT_COUNT;
   }
 
   // // 사이즈
-  for (const input of sizeInputs) {
-    input.addEventListener("input", (e) => {
-      if (!IS_PAID) {
-        e.target.value = 100;
-      } else {
-        const { value } = e.target;
-        SIZE_RATIO = value;
-        for (const indicator of sizeIndicators) {
-          indicator.textContent = `${value}%`;
-        }
+  sizeInput.addEventListener("input", (e) => {
+    if (!IS_PAID) {
+      e.target.value = 100;
+    } else {
+      const { value } = e.target;
+      SIZE_RATIO = value;
+      sizeIndicator.textContent = `${value}%`;
 
-        if (!ALLOW_DOTS_CUSTOM) {
-          updateDotCount(propotionDotCount(SIZE_RATIO));
-        }
-      }
-    });
-    input.addEventListener("change", (e) => {
-      if (!IS_PAID) {
-        e.target.value = 100;
-      } else {
-        const { value } = e.target;
-        updateStorageItem({ size: value });
-        if (!ALLOW_DOTS_CUSTOM) {
-          updateStorageItem({ dotCount: DOT_COUNT });
-        }
-      }
-    });
-  }
-  // // 고정점 변경 허용
-  for (const input of allowDotsCustomInputs) {
-    input.addEventListener("change", (e) => {
-      if (!IS_PAID) {
-        e.target.checked = false;
-      } else {
-        const { checked } = e.target;
-        ALLOW_DOTS_CUSTOM = checked;
-        updateStorageItem({ allowDotsCustom: checked });
-
+      if (!ALLOW_DOTS_CUSTOM) {
         updateDotCount(propotionDotCount(SIZE_RATIO));
+      }
+    }
+  });
+  sizeInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.value = 100;
+    } else {
+      const { value } = e.target;
+      updateStorageItem({ size: value });
+      if (!ALLOW_DOTS_CUSTOM) {
         updateStorageItem({ dotCount: DOT_COUNT });
-        for (const dotsInput of dotCountInputs) {
-          dotsInput.disabled = !checked;
-        }
       }
-    });
-  }
+    }
+  });
+
+  // // 고정점 변경 허용
+  allowDotsCustomInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.checked = false;
+    } else {
+      const { checked } = e.target;
+      ALLOW_DOTS_CUSTOM = checked;
+      updateStorageItem({ allowDotsCustom: checked });
+
+      updateDotCount(propotionDotCount(SIZE_RATIO));
+      updateStorageItem({ dotCount: DOT_COUNT });
+      dotCountInput.disabled = !checked;
+    }
+  });
+
   // // 고정점 개수
-  for (const input of dotCountInputs) {
-    input.addEventListener("input", (e) => {
-      if (!IS_PAID) {
-        e.target.value = 20;
-      } else {
-        const { value } = e.target;
-        DOT_COUNT = value;
-        for (const indicator of dotCountIndicators) {
-          indicator.textContent = `${value}`;
+  dotCountInput.addEventListener("input", (e) => {
+    if (!IS_PAID) {
+      e.target.value = 20;
+    } else {
+      const { value } = e.target;
+      DOT_COUNT = value;
+      dotCountIndicator.textContent = `${value}`;
+    }
+  });
+  dotCountInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.value = 20;
+    } else {
+      const { value } = e.target;
+      updateStorageItem({ dotCount: value });
+    }
+  });
+
+  // 스킨 변경
+  skinForm.addEventListener("change", () => {
+    let selectedSkin = "default";
+    if (IS_PAID) {
+      for (let skinRadio of skinRadios) {
+        if (skinRadio.checked) {
+          if (skinRadio.value !== "default") {
+            updateStorageItem({ paidContentsUsed: true });
+          }
+          selectedSkin = skinRadio.value;
+          break;
         }
       }
-    });
-    input.addEventListener("change", (e) => {
-      if (!IS_PAID) {
-        e.target.value = 20;
+    }
+    updateStorageItem({ skin: selectedSkin });
+  });
+
+  // 이동 방식 변경
+  movementTypeForm.addEventListener("change", () => {
+    let selectedType = "A";
+    if (IS_PAID) {
+      for (let movementTypeRadio of movementTypeRadios) {
+        if (movementTypeRadio.checked) {
+          if (movementTypeRadio.value !== "A") {
+            updateStorageItem({ paidContentsUsed: true });
+          }
+          selectedType = movementTypeRadio.value;
+          break;
+        }
+      }
+    }
+    updateStorageItem({ movementType: selectedType });
+  });
+
+  console.log(movementTypeRadios);
+
+  // 환불 버튼
+  refundBtn?.addEventListener("click", () => {
+    // 결제 팝업 열기 요청 메세지 전송
+    sendMessage({ openManage: true }, (res) => {
+      // 팝업 오픈 실패 시
+      if (!res.success) {
       } else {
-        const { value } = e.target;
-        updateStorageItem({ dotCount: value });
       }
     });
-  }
+  });
+
+  // 구매 복원 버튼
+  restoreBtn.addEventListener("click", () => {
+    // 결제 팝업 열기 요청 메세지 전송
+    sendMessage({ openManage: true }, (res) => {
+      // 팝업 오픈 실패 시
+      if (!res.success) {
+      } else {
+      }
+    });
+  });
 
   init();
 };
@@ -374,14 +442,13 @@ function removeStorageItem(item) {
   chrome.storage.sync.remove(item);
 }
 
-async function getStorageItem(key, callback = () => null) {
-  let res = null;
-  await chrome.storage.sync.get([key], (result) => {
-    callback(result);
-    res = result;
+function getStorageItem(key, callback = () => null) {
+  return new Promise((res, rej) => {
+    chrome.storage.sync.get([key], (result) => {
+      callback(result);
+      res(result);
+    });
   });
-
-  return res;
 }
 
 function reset() {
@@ -391,6 +458,9 @@ function reset() {
   removeStorageItem("size");
   removeStorageItem("allowDotsCustom");
   removeStorageItem("dotCount");
+  removeStorageItem("skin");
+  removeStorageItem("movementType");
+  removeStorageItem("paidContentsUsed");
 }
 
 function sendMessage(message, callback = () => null) {
@@ -428,13 +498,7 @@ function secToHMS(sec) {
 // 서비스워커 활성화 체크
 //
 if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-  console.log(
-    "service worker online",
-    navigator.serviceWorker,
-    navigator.serviceWorker.controller
-  );
 } else {
-  console.log("service worker offline");
 }
 
 document.addEventListener("DOMContentLoaded", DOMContentLoadedHandler);

@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Orbit";
-  src: url("./src/font/Orbit-Regular.ttf") format("truetype");
+  src: url("./src/fonts/Orbit-Regular.ttf") format("truetype");
 }
 
 html,
@@ -37,20 +37,29 @@ button {
 
 .header-wrapper {
   text-align: center;
+  margin-top: 10px;
   margin-bottom: 20px;
 }
 
-.header-wrapper #header-en {
+.header-wrapper #header-img {
+  width: 100%;
+}
+
+/* .header-wrapper #header-en {
   font-size: 24px;
   font-weight: 700;
   background-color: black;
   padding-bottom: 6px;
-}
+} */
+/* 
+let glitchBlue = "rgb(90, 198, 198)";
+let glitchRed = "rgb(220, 80, 80)"; */
 
 .header,
 .card-header {
   color: white;
-  text-shadow: 1px 1px #adff2f, 2px 2px #ff1818, 3px 3px #1f51ff;
+  /* text-shadow: 1px 1px rgb(220, 80, 80), 2px 2px rgb(90, 198, 198); */
+  font-weight: 700;
 }
 
 .card {
@@ -100,6 +109,7 @@ button {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  margin-bottom: 10px;
 }
 #timer-wrapper #timer-description {
   font-size: 12px;
@@ -137,7 +147,6 @@ button {
   width: 54px;
   height: 24px;
   padding: 0;
-  margin-top: 10px;
   align-self: center;
 }
 
@@ -207,7 +216,7 @@ button {
   gap: 5px;
 }
 
-#payment-wrapper .btn-wrapper .payment-btn {
+#payment-wrapper .btn-wrapper #payment-btn {
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -221,7 +230,7 @@ button {
   text-align: center;
 }
 
-#payment-wrapper .btn-wrapper .payment-btn:hover .icon {
+#payment-wrapper .btn-wrapper #payment-btn:hover .icon {
   animation: boost 2s 0s ease-in-out infinite;
 }
 
@@ -264,13 +273,13 @@ button {
   }
 }
 
-#payment-wrapper .btn-wrapper .payment-btn .icon {
+#payment-wrapper .btn-wrapper #payment-btn .icon {
   display: inline;
   font-size: 18px;
   margin-right: 10px;
 }
 
-#payment-wrapper .btn-wrapper .payment-btn .text {
+#payment-wrapper .btn-wrapper #payment-btn .text {
   color: white;
   display: inline;
   font-size: 14px;
@@ -287,7 +296,7 @@ button {
   padding: 2px;
 }
 
-#fee-for-section {
+#premium-section {
   position: relative;
   user-select: none;
   display: flex;
@@ -295,7 +304,7 @@ button {
   justify-content: center;
 }
 
-#fee-for-section #locker {
+#premium-section #locker {
   position: absolute;
   background-color: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(1px);
@@ -310,10 +319,80 @@ button {
   color: black;
 }
 
-#customize-size,
-#customize-dot-count {
+#premium-section .card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#customize-skin-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  margin: auto;
+  padding: 5px;
+  gap: 5px;
+}
+
+#customize-skin-wrapper label {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  text-align: center;
+  justify-content: space-between;
+  border: 1px solid black;
+  padding-bottom: 5px;
+}
+
+#customize-skin-wrapper label h4 {
+  line-height: 14px;
+}
+
+#customize-skin-wrapper label input {
+  justify-self: flex-end;
+  margin: 5px 0px;
+}
+
+#customize-skin-wrapper img {
+  margin: 10px;
+  width: 50px;
+  height: 50px;
+}
+
+#customize-skin-wrapper #skin-coming-soon:before {
+  content: "";
+  margin: 10px;
+  margin-bottom: 15px;
+  width: 50px;
+  height: 50px;
+  display: block;
+}
+
+#customize-movement-type-wrapper {
+  display: flex;
+}
+
+#customize-movement-type-wrapper > label {
+  display: flex;
+  gap: 5px;
+  padding-right: 15px;
+}
+
+.customize-item {
   display: flex;
   align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.customize-item .customize-item-header {
+  padding-bottom: 4px;
+  flex-basis: 100%;
+}
+
+.customize-dot-count-header-wrapper {
+  flex-basis: 100%;
+  display: flex;
+  gap: 3px;
 }
 
 .lang-select-wrapper {
@@ -327,8 +406,15 @@ button {
   padding-top: 20px;
 }
 
-#footer p {
+#footer p,
+#footer a,
+#footer #refund {
   color: gray;
   text-align: center;
   font-size: 11px;
+}
+
+#footer #refund {
+  cursor: pointer;
+  text-decoration: underline;
 }

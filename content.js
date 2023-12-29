@@ -6,6 +6,8 @@ const offscreenCtx = offscreenCvs.getContext("2d");
 let mouseMoveTarget = window;
 let appendTarget = document.body;
 
+console.log(process.env.NODE_ENV);
+
 // canvas styles
 cvs.id = "Strange_Astronaut";
 cvs.style.position = "fixed";
@@ -23,10 +25,13 @@ cvs.style.scale = "0.5";
 const LEFT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="226.55" cy="349.91" rx="151.53" ry="162.44" transform="translate(-61.72 48.81) rotate(-10.83)"/><polygon class="cls-1" points="251.8 337.92 343.95 322.43 295.33 38.16 203.17 53.65 251.8 337.92"/><ellipse class="cls-1" cx="249.25" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
 const RIGHT_FINGER_SVG = `<svg id="_레이어_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><style>.cls-1{fill:#ffec00;stroke-width:0px;}</style></defs><ellipse class="cls-1" cx="285.45" cy="349.91" rx="162.44" ry="151.53" transform="translate(-111.87 564.52) rotate(-79.17)"/><polygon class="cls-1" points="260.2 337.92 168.05 322.43 216.67 38.16 308.83 53.65 260.2 337.92"/><ellipse class="cls-1" cx="262.75" cy="45.9" rx="46.74" ry="46.32"/></svg>`;
 
+// footstep audio
+// const footstepAudioSrc = chrome.runtime.getURL(`src/audios/footstep.m4a`);
+
 // variable
 let isPaid = false;
 let timerStartAt = null;
-let enablePizza = false;
+let headToRight = true;
 let dots = {};
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
 let cvsSize = [window.innerWidth * 2, window.innerHeight * 2];
@@ -39,11 +44,160 @@ let areaGap = 10;
 let bodyColor = "#F5F5F5";
 let feetColor = "#ffec00";
 let lineColor = "lightgray";
+let glitchBlue = "rgb(90, 198, 198)";
+let glitchRed = "rgb(220, 80, 80)";
 let dotColor = "rgba(0, 0, 0, 0.2)";
 let sizeRatio = 1;
 let bodyWidth = Math.max(...cvsSize) * 0.01 * sizeRatio;
 let bodyHeight = bodyWidth * 2.3;
 let limbsWidth = bodyWidth * 0.8;
+let skin = "default";
+let movementType = "A";
+
+// 프로그램 토글 여부 초기화
+getStorageItem("enabled", (result) => {
+  if (result.enabled === true) {
+    enable();
+  }
+});
+// 타이머 초기화
+getStorageItem("timerStartAt", (result) => {
+  if (Object.keys(result).length > 0) {
+    timerStartAt = result.timerStartAt;
+  }
+});
+// 결제 여부 초기화
+getStorageItem("isPaid", (result) => {
+  if (Object.keys(result).length > 0 && result.isPaid === true) {
+    isPaid = true;
+  }
+});
+// 사이즈 초기화
+getStorageItem("size", (result) => {
+  if (Object.keys(result).length > 0) {
+    customizeSize(result.size);
+  }
+});
+// 고정점 개수 초기화
+getStorageItem("dotCount", (result) => {
+  if (Object.keys(result).length > 0) {
+    customizeDots(parseInt(result.dotCount));
+  }
+});
+// 스킨 초기화
+getStorageItem("skin", (result) => {
+  if (Object.keys(result).length) {
+    skin = result.skin;
+  }
+});
+// 이동 방식 초기화
+getStorageItem("movementType", (result) => {
+  if (Object.keys(result).length) {
+    movementType = result.movementType;
+  }
+});
+
+// 프로그램 활성화 여부 및 결제 여부 등 감시
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  for (var key in changes) {
+    // 활성화 여부
+    if (key === "enabled") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        enable();
+      } else {
+        disable();
+      }
+    } else if (key === "isPaid") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        isPaid = true;
+      } else {
+        isPaid = false;
+      }
+    } else if (key === "timerStartAt") {
+      const startAt = changes[key].newValue;
+      timerStartAt = startAt;
+    } else if (key === "size") {
+      const size = changes[key].newValue;
+      customizeSize(size);
+    } else if (key === "dotCount") {
+      const dotCount = changes[key].newValue;
+      customizeDots(parseInt(dotCount));
+    } else if (key === "skin") {
+      const newSkin = changes[key].newValue;
+      skin = newSkin;
+    } else if (key === "movementType") {
+      const newType = changes[key].newValue;
+      movementType = newType;
+    }
+  }
+});
+// 팝업에서 메세지를 보낼 경우 여기에서 가장 먼저 수신한다.
+const receiveMessage = async (e) => {
+  // 보안 검사
+  if (
+    e.origin !== window.location.origin ||
+    e.origin.indexOf("localhost:3000") <= -1
+  ) {
+    return;
+  }
+  // 받은 데이터
+  const { data } = e;
+
+  if (!!data?.payment_source) {
+    console.log("content has received payment data.", data);
+
+    // 결제가 성공한 경우
+    if (data.status === "COMPLETED") {
+      // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
+      sendMessage({ paymentComplete: true }, function (res) {
+        console.log(res);
+        // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
+        window.postMessage("Payment confirmed.", "http://localhost:3000");
+      });
+      // 결제가 취소된 경우
+    } else if (data.status === "CANCELED") {
+      sendMessage({ paymentCanceled: true }, function (res) {
+        console.log(res);
+        // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
+        window.postMessage("Payment canceled.", "http://localhost:3000");
+      });
+    }
+    // 결제 팜업 닫기 요청
+  } else if (data === "closePayment") {
+    sendMessage({ closePayment: true }, function (res) {
+      console.log(res);
+    });
+    // 유료 콘텐츠 이용 여부 요청
+  } else if (data === "isPaidContentsUsed") {
+    await getStorageItem("paidContentsUsed", (result) => {
+      console.log(result);
+      window.postMessage(
+        { paidContentsUsed: result.paidContentsUsed === true ? true : false },
+        "http://localhost:3000"
+      );
+    });
+  }
+};
+function updateStorageItem(item) {
+  chrome.storage.sync.set(item);
+}
+function removeStorageItem(item) {
+  chrome.storage.sync.remove(item);
+}
+async function getStorageItem(key, callback = () => null) {
+  let res = null;
+  await chrome.storage.sync.get([key], (result) => {
+    callback(result);
+    res = result;
+  });
+  return res;
+}
+function sendMessage(message, callback = () => null) {
+  chrome.runtime.sendMessage(message, (res) => callback(res));
+}
+window.addEventListener("message", receiveMessage);
 
 const createDots = (cvsSize) => {
   dots = {};
@@ -54,14 +208,12 @@ const createDots = (cvsSize) => {
   offscreenCvs.height = cvsHeight;
 
   const areas = [];
-  // const areaWidth = (cvsWidth - areaGap * (areaDivide)) / areaDivide;
-  // const areaHeight = (cvsHeight - areaGap * areaDivide) / areaDivide;
   const areaWidth = (cvsWidth - areaGap * areaDivide) / areaDivide;
   const areaHeight = (cvsHeight - areaGap * areaDivide) / areaDivide;
 
   for (let i = 1; i <= areaDivide + 2; i++) {
     const startY =
-      areaGap / 2 + (areaHeight + areaGap) * (i - 1) - (areaWidth + areaGap);
+      areaGap / 2 + (areaHeight + areaGap) * (i - 1) - (areaHeight + areaGap);
     const endY = startY + areaHeight;
 
     for (let j = 1; j <= areaDivide + 2; j++) {
@@ -89,6 +241,7 @@ const createDots = (cvsSize) => {
       x,
       y,
       trackingMouse: false,
+      isMoving: false,
     };
 
     dots[GENERATE_ID()] = dot;
@@ -104,11 +257,37 @@ const updateFeet = () => {
   // 몸통 위치
   let newBodyX = bodyX;
   let newBodyY = bodyY;
-  const deltaX = mouseBodyX - bodyX;
-  const deltaY = mouseBodyY - bodyY;
-  const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) - bodyHeight * 2;
+
+  let deltaX, deltaY, distance;
+
+  if (movementType === "B") {
+    const centerFeetX =
+      (feet?.reduce(
+        (acc, cur, i) => (cur.trackingMouse ? acc : acc + cur.x),
+        0
+      ) +
+        mouseX) /
+        4 || 0;
+    const centerFeetY =
+      (feet?.reduce(
+        (acc, cur, i) => (cur.trackingMouse ? acc : acc + cur.y),
+        0
+      ) +
+        mouseY) /
+        4 || 0;
+    deltaX = centerFeetX - bodyX;
+    deltaY = centerFeetY - bodyY;
+    // 몸통이 마우스 정위치로 움직이고 싶다면 아래 값으로 사용
+    distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+  } else {
+    deltaX = mouseBodyX - bodyX;
+    deltaY = mouseBodyY - bodyY;
+    // 몸통과 마우스 사이의 거리를 좀 두고 싶다면 아래 값으로 사용
+    distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) - bodyHeight * 2;
+  }
+
   const dampingFactor = 0.5;
-  const curSpeed = distance / 5;
+  const curSpeed = distance / 2.5;
   const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
 
   if (SPEED > 0) {
@@ -156,10 +335,23 @@ const updateFeet = () => {
     sortedQuadrant3 = DOT_SORT(quadrant3),
     sortedQuadrant4 = DOT_SORT(quadrant4);
 
+  // const nearDot1 = sortedQuadrant1[0]?.id,
+  //   nearDot2 = sortedQuadrant2[0]?.id,
+  //   nearDot3 = sortedQuadrant3[0]?.id,
+  //   nearDot4 = sortedQuadrant4[0]?.id,
+  //   nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
+
+  // 다리는 몸통과 너무 가깝지 않도록 조절
   const nearDot1 = sortedQuadrant1[0]?.id,
     nearDot2 = sortedQuadrant2[0]?.id,
-    nearDot3 = sortedQuadrant3[0]?.id,
-    nearDot4 = sortedQuadrant4[0]?.id,
+    nearDot3 =
+      dots[sortedQuadrant3[0]?.id]?.y > bodyY + bodyHeight * 0.3
+        ? sortedQuadrant3[0]?.id
+        : sortedQuadrant3[1]?.id,
+    nearDot4 =
+      dots[sortedQuadrant4[0]?.id]?.y > bodyY + bodyHeight * 0.3
+        ? sortedQuadrant4[0]?.id
+        : sortedQuadrant4[1]?.id,
     nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
 
   let newFeet = feet;
@@ -175,12 +367,20 @@ const updateFeet = () => {
 
   for (let i = 0; i < newFeet.length; i++) {
     const foot = newFeet[i];
-    const { x: footX, y: footY } = foot;
+    const { x: footX, y: footY, soundPlayed } = foot;
     const nearDot = nearDots[i];
     let targetX, targetY;
 
+    // 손가락 가리키는거 비활성화하려면 아래 값을 false로
     const isTrackingMouse =
       (i === 0 && bodyX <= mouseBodyX) || (i === 1 && bodyX > mouseBodyX);
+
+    // 마우스 방향따라 머리 방향 지정
+    if (i === 0 && isTrackingMouse) {
+      headToRight = true;
+    } else if (i === 1 && isTrackingMouse) {
+      headToRight = false;
+    }
 
     if (isTrackingMouse) {
       targetX =
@@ -189,6 +389,22 @@ const updateFeet = () => {
           ((bodyX - mouseX - Math.sign(bodyX - mouseX) * limbsWidth * 2) /
             (limbsWidth * 4));
       targetY = mouseY + Math.sign(bodyY - mouseY) * limbsWidth * 1.5;
+
+      const deltaX = bodyX - targetX;
+      const deltaY = bodyY - targetY;
+      const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+      if (distance >= bodyHeight * 2.5) {
+        const directionX = mouseX - bodyX;
+        const directionY = mouseY - bodyY;
+        const length = Math.sqrt(
+          directionX * directionX + directionY * directionY
+        );
+        const unitDirectionX = directionX / length;
+        const unitDirectionY = directionY / length;
+        targetX = bodyX + unitDirectionX * bodyHeight * 2.5;
+        targetY = bodyY + unitDirectionY * bodyHeight * 2.5;
+      }
     } else {
       targetX = dots[nearDot]?.x;
       targetY = dots[nearDot]?.y;
@@ -230,8 +446,17 @@ const updateFeet = () => {
 
 const draw = () => {
   const [cvsWidth, cvsHeight] = cvsSize;
-  const [bodyX, bodyY] = bodyPos;
-  const [mouseX, mouseY] = mousePos;
+  const glitchRandomImg =
+    skin === "glitch" ? Math.round(Math.random() * 13) : 0;
+  const glitchRandomValue =
+    skin === "glitch"
+      ? bodyWidth / Math.round(Math.random() * (25 - 20) + 20)
+      : 0;
+  const glitchRandomSign =
+    skin === "glitch" ? (Math.random() < 0.5 ? -1 : 1) : 0;
+
+  let [mouseX, mouseY] = mousePos;
+  let [bodyX, bodyY] = bodyPos;
 
   // 그리기 명령 배열
   const drawCommands1 = [];
@@ -244,10 +469,17 @@ const draw = () => {
   if (!!feet) {
     for (let i = 0; i < feet.length; i++) {
       let { x, y } = feet[i];
-      let jointX = bodyX;
-      let jointY = bodyY;
-      let controlX = (x + jointX) / 2;
-      let controlY = (y + jointY) / 2;
+      x += glitchRandomValue * glitchRandomSign;
+      y += glitchRandomValue * glitchRandomSign;
+      let jointX = bodyX + glitchRandomValue * glitchRandomSign;
+      let jointY = bodyY + glitchRandomValue * glitchRandomSign;
+      let controlX = (x + jointX) / 2 + glitchRandomValue * glitchRandomSign;
+      let controlY = (y + jointY) / 2 + glitchRandomValue * glitchRandomSign;
+
+      // let jointX = bodyX;
+      // let jointY = bodyY;
+      // let controlX = (x + jointX) / 2;
+      // let controlY = (y + jointY) / 2;
 
       // 오른팔
       if (i === 0) {
@@ -281,6 +513,7 @@ const draw = () => {
         ctx.quadraticCurveTo(controlX, controlY, jointX, jointY);
         ctx.stroke();
       });
+
       // 팔다리
       (i <= 1 ? drawCommands3 : drawCommands2).push((ctx) => {
         ctx.strokeStyle = bodyColor;
@@ -302,6 +535,117 @@ const draw = () => {
           jointY + bodyWidth
         );
       });
+
+      // 글리치 팔다리 테두리
+      skin === "glitch" &&
+        (i <= 1 ? drawCommands3 : drawCommands2).unshift((ctx) => {
+          ctx.strokeStyle = glitchRed;
+          ctx.lineCap = "round";
+          ctx.lineWidth =
+            limbsWidth * 1.1 + glitchRandomValue * glitchRandomSign * 2;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.quadraticCurveTo(
+            controlX + glitchRandomValue * glitchRandomSign * 2,
+            controlY + glitchRandomValue * glitchRandomSign * 2,
+            jointX + glitchRandomValue * glitchRandomSign * 2,
+            jointY + glitchRandomValue * glitchRandomSign * 2
+          );
+          ctx.stroke();
+          ctx.strokeStyle = glitchBlue;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.quadraticCurveTo(
+            controlX - glitchRandomValue * glitchRandomSign * 2,
+            controlY - glitchRandomValue * glitchRandomSign * 2,
+            jointX - glitchRandomValue * glitchRandomSign * 2,
+            jointY - glitchRandomValue * glitchRandomSign * 2
+          );
+          ctx.stroke();
+        });
+
+      const glitchEffect1 = new Image();
+      const glitchEffect2 = new Image();
+      const glitchEffect3 = new Image();
+
+      if (skin === "glitch") {
+        const glitchEffectRandomImg1 = Math.round(Math.random() * 8);
+        const glitchEffectRandomImg2 = Math.round(Math.random() * 8);
+        const glitchEffectRandomImg3 = Math.round(Math.random() * 8);
+
+        glitchEffect1.src = chrome.runtime.getURL(
+          `src/images/glitch_effect_${glitchEffectRandomImg1}.png`
+        );
+        glitchEffect2.src = chrome.runtime.getURL(
+          `src/images/glitch_effect_${glitchEffectRandomImg2}.png`
+        );
+        glitchEffect3.src = chrome.runtime.getURL(
+          `src/images/glitch_effect_${glitchEffectRandomImg3}.png`
+        );
+        let effectX1 = x;
+        let effectY1 = y;
+        let effectX2 = jointX;
+        let effectY2 = jointY;
+        let effectX3 = controlX;
+        let effectY3 = controlY;
+
+        const deltaX = x - jointX;
+        const deltaY = y - jointY;
+        const effectSize = Math.sqrt(deltaX ** 2 + deltaY ** 2) / 2;
+
+        if (i <= 1) {
+          effectY1 -= effectSize / 2;
+          effectY2 -= effectSize / 2;
+          effectY3 -= effectSize / 2;
+          if (i === 0) {
+            effectX1 -= effectSize / 2;
+            effectX3 -= effectSize / 4;
+          } else if (i === 1) {
+            effectX1 -= effectSize / 2;
+            effectX2 -= effectSize;
+            effectX3 -= effectSize;
+          }
+        } else {
+          effectY1 -= effectSize / 2;
+          if (i === 2) {
+            effectX1 -= effectSize / 2;
+            effectX2 -= effectSize;
+            effectX3 -= effectSize;
+          } else if (i === 3) {
+            effectX1 -= effectSize / 2;
+            effectX2 -= effectSize / 2;
+            effectX3 -= effectSize / 2;
+          }
+        }
+
+        drawCommands3.push((ctx) => {
+          ctx.drawImage(
+            glitchEffect1,
+            effectX1,
+            effectY1,
+            effectSize,
+            effectSize
+          );
+        });
+        drawCommands3.push((ctx) => {
+          ctx.drawImage(
+            glitchEffect2,
+            effectX2,
+            effectY2,
+            effectSize,
+            effectSize
+          );
+        });
+        drawCommands3.push((ctx) => {
+          ctx.drawImage(
+            glitchEffect3,
+            effectX3,
+            effectY3,
+            effectSize,
+            effectSize
+          );
+        });
+      }
     }
   }
 
@@ -352,8 +696,11 @@ const draw = () => {
     ctx.fillStyle = "#000000";
     ctx.beginPath();
     ctx.arc(
-      bodyX,
-      bodyY + bodyHeight / 2 - bodyHeight / 5,
+      bodyX + glitchRandomValue * glitchRandomSign,
+      bodyY +
+        bodyHeight / 2 -
+        bodyHeight / 5 +
+        glitchRandomValue * glitchRandomSign,
       (bodyWidth * 1.1) / 2,
       Math.PI * 2,
       Math.PI * 3
@@ -361,6 +708,7 @@ const draw = () => {
     ctx.closePath();
     ctx.fill();
   });
+
   // 엉덩이
   drawCommands2.push((ctx) => {
     ctx.fillStyle = bodyColor;
@@ -378,9 +726,9 @@ const draw = () => {
 
   // 손발 그리기
   if (!!feet) {
-    for (let i = 0; i < feet?.length; i++) {
+    for (let j = 0; j < feet?.length; j++) {
+      const i = skin === "glitch" ? Math.round(Math.random() * 3) : j;
       const { x, y, trackingMouse } = feet[i];
-
       const deltaX = x - mouseX;
       const deltaY = y - mouseY;
       const angle = -Math.atan2(deltaX, deltaY);
@@ -508,12 +856,21 @@ const draw = () => {
     }
   }
 
-  // 머리 및 타이머
+  // // 머리 및 타이머
   const headImg = new Image();
-  const headToRight = !!feet && feet[0].trackingMouse;
-  headImg.src = chrome.runtime.getURL(
-    `images/original_character${headToRight ? "" : "_reverse"}.png`
-  );
+  // 글리치 머리
+  if (skin === "glitch") {
+    headImg.src = chrome.runtime.getURL(
+      `src/images/glitch_character_${
+        headToRight ? "right" : "left"
+      }_${glitchRandomImg}.png`
+    );
+    // 오리지널 머리
+  } else {
+    headImg.src = chrome.runtime.getURL(
+      `src/images/original_character_${headToRight ? "right" : "left"}.png`
+    );
+  }
 
   drawCommands3.push((ctx) => {
     ctx.drawImage(
@@ -539,24 +896,15 @@ const draw = () => {
   !isPaid &&
     drawCommands3.push((ctx) => {
       const [H, M, S] = secToHMS(
-        Math.round((30000 + timerStartAt - Date.now()) / 1000)
+        Math.round((300000 + timerStartAt - Date.now()) / 1000)
       );
       const text = `${M.toString().padStart(2, "0")}:${Math.round(S)
         .toString()
         .padStart(2, "0")}`;
       ctx.fillStyle = "black";
       ctx.font = "24px monospace";
-      ctx.fillText(text, bodyX - bodyWidth * 2.1, bodyY - bodyHeight * 1.5);
+      ctx.fillText(text, bodyX - 36, bodyY - bodyHeight * 1.5);
     });
-
-  // 마우스 커서
-  if (enablePizza) {
-    const pizzaImg = new Image();
-    pizzaImg.src = chrome.runtime.getURL(`images/pizza.png`);
-    drawCommands1.unshift((ctx) => {
-      ctx.drawImage(pizzaImg, mouseX, mouseY, 50, 50);
-    });
-  }
 
   // 그림자 그리기 명령을 drawCommands1으로 합치기
   drawCommands1.unshift(
@@ -611,9 +959,7 @@ const windowResizeHandler = () => {
   limbsWidth = bodyWidth * 0.8;
   createDots(newCvsSize);
 };
-
 const mouseMoveHandler = (e) => {
-  document.body.style.cursor = enablePizza ? "none" : "auto";
   // 캔버스를 0.5배율 했기 때문에 마우스의 위치는 2배율된 좌표로 계산
   mousePos = [e.clientX * 2, e.clientY * 2];
 };
@@ -624,7 +970,6 @@ function swKeepAlive() {
     console.log(res);
   });
 }
-
 const enable = () => {
   windowResizeHandler();
 
@@ -720,137 +1065,9 @@ const customizeDots = (dotCount) => {
   windowResizeHandler();
 };
 
-// 프로그램 토글 여부 초기화
-getStorageItem("enabled", (result) => {
-  if (Object.keys(result).length <= 0 || result.enabled === true) {
-    enable();
-  }
-});
-// 피자 커서 활성화 여부 초기화
-getStorageItem("pizza", (result) => {
-  if (Object.keys(result).length > 0 && result.pizza === true) {
-    enablePizza = true;
-  }
-});
-// 결제 여부 초기화
-getStorageItem("isPaid", (result) => {
-  if (Object.keys(result).length > 0 && result.isPaid === true) {
-    isPaid = true;
-  }
-});
-// 사이즈 초기화
-getStorageItem("size", (result) => {
-  if (Object.keys(result).length > 0) {
-    customizeSize(result.size);
-  }
-});
-// 고정점 개수 초기화
-getStorageItem("dotCount", (result) => {
-  if (Object.keys(result).length > 0) {
-    customizeDots(result.dotCount);
-  }
-});
-getStorageItem("timerStartAt", (result) => {
-  if (Object.keys(result).length > 0) {
-    timerStartAt = result.timerStartAt;
-  }
-});
-
-// 프로그램 및 피자 커서 활성화 여부 및 결제 여부 감시
-chrome.storage.onChanged.addListener(function (changes, namespace) {
-  for (var key in changes) {
-    // 활성화 여부
-    if (key === "enabled") {
-      const status = changes[key].newValue;
-      if (status === true) {
-        enable();
-      } else {
-        disable();
-      }
-      // 피자 여부
-    } else if (key === "pizza") {
-      const status = changes[key].newValue;
-      if (status === true) {
-        enablePizza = true;
-      } else {
-        enablePizza = false;
-      }
-      // 결제 여부
-    } else if (key === "isPaid") {
-      const status = changes[key].newValue;
-      if (status === true) {
-        isPaid = true;
-      } else {
-        isPaid = false;
-      }
-      // 체험 시작 시간
-    } else if (key === "size") {
-      const size = changes[key].newValue;
-      customizeSize(size);
-    } else if (key === "dotCount") {
-      const dotCount = changes[key].newValue;
-      customizeDots(dotCount);
-    } else if (key === "timerStartAt") {
-      const startAt = changes[key].newValue;
-      timerStartAt = startAt;
-    }
-  }
-});
-
-// 결제 팝업에서 결제가 완료될 경우 여기에서 가장 먼저 결과를 수신한다.
-const receivePaymentData = (e) => {
-  // 보안 검사
-  if (
-    e.origin !== window.location.origin ||
-    e.origin.indexOf("localhost:3000") <= -1
-  ) {
-    return;
-  }
-
-  // 결제 데이터
-  const paymentData = e.data;
-  console.log("content has received payment data.", paymentData);
-
-  // 결제가 성공한 경우
-  // TODO: 검증 과정 추가하기
-  if (paymentData.status === "DONE") {
-    // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
-    sendMessage({ paymentComplete: true }, function (res) {
-      console.log(res);
-      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
-      // TODO: 결제 팝업에서 답장 수신 후 처리하기
-      window.postMessage("Payment confirmed.", "http://localhost:3000/");
-    });
-  }
-};
-
 function secToHMS(sec) {
   const hour = Math.max(Math.floor(sec / 3600), 0);
   const minute = Math.min(Math.max(Math.floor((sec % 3600) / 60), 0), 59);
   const second = Math.min(Math.max(sec % 60, 0), 59);
   return [hour, minute, second];
 }
-
-function updateStorageItem(item) {
-  chrome.storage.sync.set(item);
-}
-
-function removeStorageItem(item) {
-  chrome.storage.sync.remove(item);
-}
-
-async function getStorageItem(key, callback = () => null) {
-  let res = null;
-  await chrome.storage.sync.get([key], (result) => {
-    callback(result);
-    res = result;
-  });
-
-  return res;
-}
-
-function sendMessage(message, callback = () => null) {
-  chrome.runtime.sendMessage(message, (res) => callback(res));
-}
-
-window.addEventListener("message", receivePaymentData);

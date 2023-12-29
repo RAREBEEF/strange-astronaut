@@ -1,19 +1,28 @@
 {
   "toggle": {
     "timer": {
-      "description": "Auto off at 30 second intervals (trial version)"
+      "description": "Free versions automatically turns off every 5 minutes"
     }
   },
   "payment": {
-    "description": "Call the space shuttle and try the astronaut's friends with no time limit.",
-    "btn": "Calling Space Shuttle",
-    "restore": "Restore payment"
+    "description": "Get new skins and customizations without time limits.",
+    "btn": "Get Premium",
+    "restore": "Restore purchase"
   },
   "customize": {
     "size": "size",
-    "dotCount": "dot count"
+    "dotCount": "dot count",
+    "allowKeyboard": "allow keyboard control",
+    "skin": {
+      "default": "DEFAULT",
+      "glitch": "GLITCH"
+    },
+    "movementType": "movement type"
   },
   "footer": {
-    "copyright": "all characters and assets related to \"Strange Astronaut\" belong to the intellectual property rights of \"RAREBEEF\"."
+    "copyright": "all characters and assets related to \"Strange Astronaut\" belong to the intellectual property rights of \"RAREBEEF\".",
+    "termsOfUse": "terms of use.",
+    "privacyPolicy": "privacy policy.",
+    "refund": "refund."
   }
 }

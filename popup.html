@@ -9,7 +9,8 @@
   <body>
     <main id="container">
       <hgroup class="header-wrapper">
-        <h1 id="header-en" class="header">Strange Astronaut</h1>
+        <!-- <h1 id="header-en" class="header">Strange Astronaut</h1> -->
+        <img id="header-img" class="header" alt="STRANGE-ASTRONAUT" />
       </hgroup>
 
       <section id="toggle-wrapper" class="card">
@@ -18,9 +19,9 @@
           <div id="timer-wrapper">
             <p id="timer-description">30초마다 자동 종료(무료 평가판)</p>
             <div id="timer">
-              <p id="timer-minute">00</p>
+              <p id="timer-minute">05</p>
               <p class="timer-colon">:</p>
-              <p id="timer-second">30</p>
+              <p id="timer-second">00</p>
             </div>
           </div>
           <button id="toggle-btn">
@@ -30,6 +31,86 @@
             </div>
           </button>
         </div>
+      </section>
+
+      <section id="premium-section" class="card">
+        <h3 class="card-header">CUSTOMIZE</h3>
+        <div class="card-content">
+          <form id="customize-skin-wrapper">
+            <label
+              ><img id="default-skin-thumb" alt="default skin" />
+              <p id="customize-skin-default-label">기본</p>
+              <input type="radio" name="skin" value="default" checked
+            /></label>
+            <label
+              ><img id="glitch-skin-thumb" alt="glitch skin" />
+              <p id="customize-skin-glitch-label">글리치</p>
+              <input type="radio" name="skin" value="glitch"
+            /></label>
+            <label>
+              <p id="skin-coming-soon">coming soon</p>
+              <input type="radio" name="skin" value="" disabled
+            /></label>
+          </form>
+          <label
+            id="customize-size"
+            class="customize-item"
+            for="customize-size-input"
+            ><h4 class="customize-item-header" id="customize-size-label">
+              크기 조절
+            </h4>
+            <input
+              id="customize-size-input"
+              class="customize-size-input"
+              type="range"
+              min="40"
+              max="200"
+              value="100"
+            />
+            <p id="size-indicator">100%</p></label
+          >
+          <label
+            id="customize-dot-count"
+            class="customize-item"
+            for="customize-dot-count-input"
+            ><div class="customize-dot-count-header-wrapper">
+              <input
+                id="customize-allow-dots-custom-input"
+                class="customize-allow-dots-custom-input"
+                type="checkbox"
+              />
+              <h4 class="customize-item-header" id="customize-dot-count-label">
+                고정점 개수
+              </h4>
+            </div>
+            <input
+              id="customize-dot-count-input"
+              class="customize-dot-count-input"
+              type="range"
+              value="20"
+              max="50"
+              min="10"
+            />
+            <p id="dot-count-indicator">20</p></label
+          >
+          <form id="customize-movement-type-wrapper" class="customize-item">
+            <h4
+              class="customize-item-header"
+              id="customize-movement-type-label"
+            >
+              이동 방식
+            </h4>
+            <label>
+              <input type="radio" name="movement-type" value="A" checked />
+              <p id="customize-movement-type-A-label">A</p></label
+            >
+            <label>
+              <input type="radio" name="movement-type" value="B" />
+              <p id="customize-movement-type-B-label">B</p></label
+            >
+          </form>
+        </div>
+        <div id="locker">PREMIUM REQUIRE</div>
       </section>
 
       <section id="payment-wrapper" class="card">
@@ -42,7 +123,7 @@
             </p>
           </div>
           <div class="btn-wrapper">
-            <button class="payment-btn">
+            <button id="payment-btn">
               <p class="icon">🚀</p>
               <p id="payment-btn-text" class="text">우주왕복선 호출하기</p>
             </button>
@@ -51,47 +132,10 @@
         </div>
       </section>
 
-      <section id="fee-for-section" class="card">
-        <h3 class="card-header">CUSTOMIZE</h3>
-        <div class="card-content">
-          <label id="customize-size" for="customize-size-input"
-            ><p id="customize-size-label">크기 조절</p>
-            <input
-              id="customize-size-input"
-              class="customize-size-input"
-              type="range"
-              min="40"
-              max="200"
-              value="100"
-            />
-            <p class="size-indicator">100%</p></label
-          >
-          <label id="customize-dot-count" for="customize-dot-count-input-ko"
-            ><input
-              id="allow-dots-custom-input-ko"
-              class="allow-dots-custom-input"
-              type="checkbox"
-            />
-            <p id="customize-dot-count-label">고정점 수</p>
-            <input
-              id="customize-dot-count-input-ko"
-              class="customize-dot-count-input"
-              type="range"
-              value="20"
-              max="50"
-              min="10"
-            />
-            <p class="dot-count-indicator">20</p></label
-          >
-        </div>
-        <div id="locker">PREMIUM REQUIRE</div>
-      </section>
-
       <section class="lang-select-wrapper card">
         <label for="lang-select" class="card-header">Language</label>
         <div class="card-content">
-          <select id="lang-select">
-            <option value="default">🌐 Default</option>
+          <select id="lang-select" value="en">
             <option value="en">🇬🇧 English</option>
             <option value="ko">🇰🇷 한국어</option>
           </select>
@@ -104,12 +148,26 @@
           &quot;Strange Astronaut&quot;과 관련된 모든 캐릭터와 자산은
           &quot;RAREBEEF&quot;의 지적재산권에 속합니다.
         </p>
+        <p>
+          <a
+            id="termsOfUse"
+            href="http://localhost:3000/terms-of-use"
+            target="_blank"
+            >이용 약관.</a
+          >
+          <a
+            id="privacyPolicy"
+            href="http://localhost:3000/privacy-policy"
+            target="_blank"
+            >개인정보 처리방침.</a
+          >
+        </p>
       </footer>
     </main>
 
-    <!-- <section class="debug-wrapper">
+    <section class="debug-wrapper">
       <button id="reset-btn">스토리지 초기화</button>
       <button id="paid-btn">결제 완료</button>
-    </section> -->
+    </section>
   </body>
 </html>

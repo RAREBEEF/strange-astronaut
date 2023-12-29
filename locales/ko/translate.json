@@ -1,19 +1,28 @@
 {
   "toggle": {
     "timer": {
-      "description": "30초마다 자동 종료(무료 평가판)"
+      "description": "무료 버전은 5분 간격 자동 종료"
     }
   },
   "payment": {
-    "description": " 우주왕복선을 호출해 우주비행사의 친구들을 시간 제한 없이 이용해 보세요.",
+    "description": "시간 제한 없이 새로운 스킨과 커스터마이징을 사용해 보세요.",
     "btn": "우주왕복선 호출하기",
     "restore": "구매 복원"
   },
   "customize": {
     "size": "크기 조절",
-    "dotCount": "고정점 개수"
+    "dotCount": "고정점 개수",
+    "allowKeyboard": "키보드 컨트롤 허용",
+    "skin": {
+      "default": "기본",
+      "glitch": "글리치"
+    },
+    "movementType": "이동 방식"
   },
   "footer": {
-    "copyright": "\"Strange Astronaut\"과 관련된 모든 캐릭터와 자산은 \"RAREBEEF\"의 지적재산권에 속합니다."
+    "copyright": "\"Strange Astronaut\"과 관련된 모든 캐릭터와 자산은 \"RAREBEEF\"의 지적재산권에 속합니다.",
+    "termsOfUse": "이용 약관.",
+    "privacyPolicy": "개인정보 처리방침.",
+    "refund": "환불."
   }
 }
