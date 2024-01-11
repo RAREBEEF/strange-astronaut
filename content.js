@@ -6,8 +6,6 @@ const offscreenCtx = offscreenCvs.getContext("2d");
 let mouseMoveTarget = window;
 let appendTarget = document.body;
 
-console.log(process.env.NODE_ENV);
-
 // canvas styles
 cvs.id = "Strange_Astronaut";
 cvs.style.position = "fixed";
@@ -154,14 +152,20 @@ const receiveMessage = async (e) => {
       sendMessage({ paymentComplete: true }, function (res) {
         console.log(res);
         // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
-        window.postMessage("Payment confirmed.", "http://localhost:3000");
+        window.postMessage(
+          "Payment confirmed.",
+          "https://strange-astronaut.vercel.app"
+        );
       });
       // 결제가 취소된 경우
     } else if (data.status === "CANCELED") {
       sendMessage({ paymentCanceled: true }, function (res) {
         console.log(res);
         // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
-        window.postMessage("Payment canceled.", "http://localhost:3000");
+        window.postMessage(
+          "Payment canceled.",
+          "https://strange-astronaut.vercel.app"
+        );
       });
     }
     // 결제 팜업 닫기 요청
@@ -175,7 +179,7 @@ const receiveMessage = async (e) => {
       console.log(result);
       window.postMessage(
         { paidContentsUsed: result.paidContentsUsed === true ? true : false },
-        "http://localhost:3000"
+        "https://strange-astronaut.vercel.app"
       );
     });
   }
@@ -260,7 +264,12 @@ const updateFeet = () => {
 
   let deltaX, deltaY, distance;
 
-  if (movementType === "B") {
+  deltaX = mouseBodyX - bodyX;
+  deltaY = mouseBodyY - bodyY;
+  // 몸통과 마우스 사이의 거리를 좀 두고 싶다면 아래 값으로 사용
+  distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) - bodyHeight * 2;
+
+  if (movementType === "B" || distance <= bodyHeight * 2) {
     const centerFeetX =
       (feet?.reduce(
         (acc, cur, i) => (cur.trackingMouse ? acc : acc + cur.x),
@@ -279,15 +288,10 @@ const updateFeet = () => {
     deltaY = centerFeetY - bodyY;
     // 몸통이 마우스 정위치로 움직이고 싶다면 아래 값으로 사용
     distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-  } else {
-    deltaX = mouseBodyX - bodyX;
-    deltaY = mouseBodyY - bodyY;
-    // 몸통과 마우스 사이의 거리를 좀 두고 싶다면 아래 값으로 사용
-    distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) - bodyHeight * 2;
   }
 
   const dampingFactor = 0.5;
-  const curSpeed = distance / 2.5;
+  const curSpeed = distance / (movementType === "B" ? 2.5 : 10);
   const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
 
   if (SPEED > 0) {
@@ -310,8 +314,8 @@ const updateFeet = () => {
   for (const [id, dot] of Object.entries(dots)) {
     const { x: dotX, y: dotY } = dot;
 
-    const deltaX = bodyX - dotX;
-    const deltaY = bodyY - dotY;
+    const deltaX = newBodyX - dotX;
+    const deltaY = newBodyY - dotY;
     const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
     const dotDistance = { id, distance };
 
@@ -394,7 +398,8 @@ const updateFeet = () => {
       const deltaY = bodyY - targetY;
       const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-      if (distance >= bodyHeight * 2.5) {
+      if (distance >= bodyHeight * 3) {
+        console.log("aa");
         const directionX = mouseX - bodyX;
         const directionY = mouseY - bodyY;
         const length = Math.sqrt(
@@ -402,8 +407,8 @@ const updateFeet = () => {
         );
         const unitDirectionX = directionX / length;
         const unitDirectionY = directionY / length;
-        targetX = bodyX + unitDirectionX * bodyHeight * 2.5;
-        targetY = bodyY + unitDirectionY * bodyHeight * 2.5;
+        targetX = bodyX + unitDirectionX * bodyHeight * 3;
+        targetY = bodyY + unitDirectionY * bodyHeight * 3;
       }
     } else {
       targetX = dots[nearDot]?.x;

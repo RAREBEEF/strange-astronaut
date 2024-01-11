@@ -1,7 +1,7 @@
 {
   "toggle": {
     "timer": {
-      "description": "Free versions automatically turns off every 5 minutes"
+      "description": "Free versions automatically turns off every 5 minutes."
     }
   },
   "payment": {

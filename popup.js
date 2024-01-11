@@ -280,22 +280,17 @@ const DOMContentLoadedHandler = async () => {
   // 활성화 설정
   function enable() {
     ENABLED = true;
-    toggleBtn.classList.add("enabled");
+    toggleBtn.checked = true;
   }
   function disable() {
     ENABLED = false;
-    toggleBtn.classList.remove("enabled");
+    toggleBtn.checked = false;
   }
 
   // 토글 버튼 클릭 (스토리지만 업데이트하고 앱 상태 변경에는 관여하지 않음)
-  toggleBtn.addEventListener("click", async () => {
-    await getStorageItem("enabled", (result) => {
-      if (result.enabled === true) {
-        updateStorageItem({ enabled: false });
-      } else {
-        updateStorageItem({ enabled: true });
-      }
-    });
+  toggleBtn.addEventListener("change", async (e) => {
+    const enabled = e.target.checked;
+    updateStorageItem({ enabled });
   });
 
   // 커스텀 기능
@@ -486,8 +481,8 @@ function secToHMS(sec) {
         console.log("network connection online");
       } else {
         console.log("network connection offline");
-        const container = document.getElementById("container");
-        container.textContent = "Network connection lost";
+        // const container = document.getElementById("container");
+        // container.textContent = "Network connection lost";
       }
     }
   };

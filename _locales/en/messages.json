@@ -1,8 +1,8 @@
 {
   "appName": {
-    "message": "Strange Astronaut: Mouse Pointer Follower"
+    "message": "Strange Astronaut: Mouse Cursor Follower"
   },
   "appDesc": {
-    "message": "This strange astronaut is exploring the \"Chrome\" galaxy in the vast \"Space Wide Web\" universe. There is no identification of the astronaut, from his name to his planet of origin, but one thing is clear: he is crazy about mouse pointers!"
+    "message": "This strange astronaut is exploring the \"Chrome\" galaxy in the vast \"Space Wide Web\" universe. There is no identification of the astronaut, from his name to his planet of origin, but one thing is clear: he is crazy about mouse cursor! This extension creates an astronaut character that follows the user's mouse cursor. Explore the \"Chrome\" galaxy together."
   }
 }

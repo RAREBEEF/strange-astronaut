@@ -44,7 +44,17 @@ async function init() {
   // 토글 여부 초기화
   await getStorageItem("enabled", (result) => {
     if (Object.keys(result).length <= 0) {
-      updateStorageItem({ enabled: false });
+      try {
+        chrome.windows.create({
+          url: `https://strange-astronaut.vercel.app/tutorial`,
+          width: 800,
+          height: 900,
+          type: "popup",
+        });
+      } catch (error) {
+        console.log(error);
+      }
+      updateStorageItem({ enabled: true });
       chrome.tabs.query({ active: false, currentWindow: true }, (tabs) => {
         tabs.forEach((tab) => {
           chrome.tabs.reload(tab.id);
@@ -123,7 +133,7 @@ function openPayment(sendResponse) {
   try {
     chrome.windows.create(
       {
-        url: `http://localhost:3000/`,
+        url: `https://strange-astronaut.vercel.app/purchase`,
         width: 800,
         height: 900,
         type: "popup",
@@ -170,7 +180,7 @@ function openManage(sendResponse) {
   let openPopupStatus = true;
   try {
     chrome.windows.create({
-      url: `http://localhost:3000/manage`,
+      url: `https://strange-astronaut.vercel.app/manage`,
       width: 800,
       height: 900,
       type: "popup",
