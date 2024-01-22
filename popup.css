@@ -441,7 +441,7 @@ let glitchRed = "rgb(220, 80, 80)"; */
   flex-basis: 100%;
 }
 
-.customize-dot-count-header-wrapper {
+.customize-handle-spacing-header-wrapper {
   flex-basis: 100%;
   display: flex;
   gap: 3px;

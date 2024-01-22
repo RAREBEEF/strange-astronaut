@@ -33,8 +33,8 @@ let headToRight = true;
 let dots = {};
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
 let cvsSize = [window.innerWidth * 2, window.innerHeight * 2];
-let mousePos = [100, 100];
-let bodyPos = [0, 0];
+let mousePos = [null, null];
+let bodyPos = [null, null];
 let feet = null;
 let animationFrameId = null;
 let areaDivide = 20;
@@ -77,9 +77,9 @@ getStorageItem("size", (result) => {
   }
 });
 // 고정점 개수 초기화
-getStorageItem("dotCount", (result) => {
+getStorageItem("handleSpacing", (result) => {
   if (Object.keys(result).length > 0) {
-    customizeDots(parseInt(result.dotCount));
+    customizeDots(parseInt(result.handleSpacing));
   }
 });
 // 스킨 초기화
@@ -119,9 +119,9 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     } else if (key === "size") {
       const size = changes[key].newValue;
       customizeSize(size);
-    } else if (key === "dotCount") {
-      const dotCount = changes[key].newValue;
-      customizeDots(parseInt(dotCount));
+    } else if (key === "handleSpacing") {
+      const handleSpacing = changes[key].newValue;
+      customizeDots(parseInt(handleSpacing));
     } else if (key === "skin") {
       const newSkin = changes[key].newValue;
       skin = newSkin;
@@ -154,7 +154,7 @@ const receiveMessage = async (e) => {
         // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
         window.postMessage(
           "Payment confirmed.",
-          "https://strange-astronaut.vercel.app"
+          "https://strange-astronaut.rarebeef.co.kr"
         );
       });
       // 결제가 취소된 경우
@@ -164,7 +164,7 @@ const receiveMessage = async (e) => {
         // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
         window.postMessage(
           "Payment canceled.",
-          "https://strange-astronaut.vercel.app"
+          "https://strange-astronaut.rarebeef.co.kr"
         );
       });
     }
@@ -179,7 +179,7 @@ const receiveMessage = async (e) => {
       console.log(result);
       window.postMessage(
         { paidContentsUsed: result.paidContentsUsed === true ? true : false },
-        "https://strange-astronaut.vercel.app"
+        "https://strange-astronaut.rarebeef.co.kr"
       );
     });
   }
@@ -245,7 +245,6 @@ const createDots = (cvsSize) => {
       x,
       y,
       trackingMouse: false,
-      isMoving: false,
     };
 
     dots[GENERATE_ID()] = dot;
@@ -253,8 +252,12 @@ const createDots = (cvsSize) => {
 };
 
 const updateFeet = () => {
-  const [bodyX, bodyY] = bodyPos;
   const [mouseX, mouseY] = mousePos;
+  if (mouseX === null || mouseY === null) return;
+
+  const bodyX = bodyPos[0] ?? mouseX;
+  const bodyY = bodyPos[1] ?? mouseY;
+
   const mouseBodyX = mouseX;
   const mouseBodyY = mouseY + bodyHeight;
 
@@ -371,7 +374,7 @@ const updateFeet = () => {
 
   for (let i = 0; i < newFeet.length; i++) {
     const foot = newFeet[i];
-    const { x: footX, y: footY, soundPlayed } = foot;
+    const { x: footX, y: footY } = foot;
     const nearDot = nearDots[i];
     let targetX, targetY;
 
@@ -399,7 +402,6 @@ const updateFeet = () => {
       const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
       if (distance >= bodyHeight * 3) {
-        console.log("aa");
         const directionX = mouseX - bodyX;
         const directionY = mouseY - bodyY;
         const length = Math.sqrt(
@@ -450,6 +452,8 @@ const updateFeet = () => {
 };
 
 const draw = () => {
+  if (bodyPos[0] === null || bodyPos[1] === null) return;
+
   const [cvsWidth, cvsHeight] = cvsSize;
   const glitchRandomImg =
     skin === "glitch" ? Math.round(Math.random() * 13) : 0;
@@ -1065,8 +1069,8 @@ const customizeSize = (ratio) => {
   bodyHeight = bodyWidth * 2.3;
   limbsWidth = bodyWidth * 0.8;
 };
-const customizeDots = (dotCount) => {
-  areaDivide = dotCount;
+const customizeDots = (handleSpacing) => {
+  areaDivide = 60 - handleSpacing;
   windowResizeHandler();
 };
 

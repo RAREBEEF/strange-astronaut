@@ -11,7 +11,7 @@
   },
   "customize": {
     "size": "크기 조절",
-    "dotCount": "고정점 개수",
+    "handleSpacing": "손발 사이 간격",
     "allowKeyboard": "키보드 컨트롤 허용",
     "skin": {
       "default": "기본",

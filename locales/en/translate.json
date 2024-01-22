@@ -11,7 +11,7 @@
   },
   "customize": {
     "size": "size",
-    "dotCount": "dot count",
+    "handleSpacing": "handle spacing",
     "allowKeyboard": "allow keyboard control",
     "skin": {
       "default": "DEFAULT",

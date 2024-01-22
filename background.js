@@ -46,7 +46,7 @@ async function init() {
     if (Object.keys(result).length <= 0) {
       try {
         chrome.windows.create({
-          url: `https://strange-astronaut.vercel.app/tutorial`,
+          url: `https://strange-astronaut.rarebeef.co.kr/tutorial`,
           width: 800,
           height: 900,
           type: "popup",
@@ -133,7 +133,7 @@ function openPayment(sendResponse) {
   try {
     chrome.windows.create(
       {
-        url: `https://strange-astronaut.vercel.app/purchase`,
+        url: `https://strange-astronaut.rarebeef.co.kr/purchase`,
         width: 800,
         height: 900,
         type: "popup",
@@ -180,7 +180,7 @@ function openManage(sendResponse) {
   let openPopupStatus = true;
   try {
     chrome.windows.create({
-      url: `https://strange-astronaut.vercel.app/manage`,
+      url: `https://strange-astronaut.rarebeef.co.kr/manage`,
       width: 800,
       height: 900,
       type: "popup",
@@ -198,7 +198,7 @@ function paymentCancel(sendResponse = null) {
   updateStorageItem({ skin: "default" });
   updateStorageItem({ allowKeyboardControl: false });
   updateStorageItem({ allowDotsCustom: false });
-  updateStorageItem({ dotCount: 20 });
+  updateStorageItem({ handleSpacing: 40 });
   updateStorageItem({ size: 100 });
   sendResponse && sendResponse("Cancel confirmed at background.");
 }

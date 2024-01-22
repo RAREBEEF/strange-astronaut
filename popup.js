@@ -2,7 +2,7 @@ let IS_PAID = null;
 let ENABLED = null;
 let TIMER_INTERVAL = null;
 let ALLOW_DOTS_CUSTOM = false;
-let DOT_COUNT = 20;
+let HANDEL_SPACING = 40;
 let SIZE_RATIO = 100;
 
 const DOMContentLoadedHandler = async () => {
@@ -20,8 +20,8 @@ const DOMContentLoadedHandler = async () => {
     "customize-movement-type-label"
   );
   const customizeSizeLabel = document.getElementById("customize-size-label");
-  const customizeDotCountLabel = document.getElementById(
-    "customize-dot-count-label"
+  const customizeHandleSpacingLabel = document.getElementById(
+    "customize-handle-spacing-label"
   );
   const customizeSkinDefaultLabel = document.getElementById(
     "customize-skin-default-label"
@@ -47,8 +47,12 @@ const DOMContentLoadedHandler = async () => {
   const locker = document.getElementById("locker");
   const sizeInput = document.getElementById("customize-size-input");
   const sizeIndicator = document.getElementById("size-indicator");
-  const dotCountInput = document.getElementById("customize-dot-count-input");
-  const dotCountIndicator = document.getElementById("dot-count-indicator");
+  const handleSpacingInput = document.getElementById(
+    "customize-handle-spacing-input"
+  );
+  const handleSpacingIndicator = document.getElementById(
+    "handle-spacing-indicator"
+  );
   const allowDotsCustomInput = document.getElementById(
     "customize-allow-dots-custom-input"
   );
@@ -107,7 +111,7 @@ const DOMContentLoadedHandler = async () => {
     restoreBtn.textContent = translate.payment.restore;
     customizeMovementTypeLabel.textContent = translate.customize.movementType;
     customizeSizeLabel.textContent = translate.customize.size;
-    customizeDotCountLabel.textContent = translate.customize.dotCount;
+    customizeHandleSpacingLabel.textContent = translate.customize.handleSpacing;
     customizeSkinDefaultLabel.textContent = translate.customize.skin.default;
     customizeSkinGlitchLabel.textContent = translate.customize.skin.glitch;
     copyright.textContent = translate.footer.copyright;
@@ -190,14 +194,14 @@ const DOMContentLoadedHandler = async () => {
         Object.keys(result).length > 0 && result.allowDotsCustom === true;
       ALLOW_DOTS_CUSTOM = allowDotsCustom;
       allowDotsCustomInput.checked = allowDotsCustom;
-      dotCountInput.disabled = !allowDotsCustom;
+      handleSpacingInput.disabled = !allowDotsCustom;
     });
     // // 고정점
-    getStorageItem("dotCount", (result) => {
+    getStorageItem("handleSpacing", (result) => {
       if (Object.keys(result).length > 0) {
-        DOT_COUNT = result.dotCount;
-        dotCountInput.value = result.dotCount;
-        dotCountIndicator.textContent = result.dotCount;
+        HANDEL_SPACING = result.handleSpacing;
+        handleSpacingInput.value = result.handleSpacing;
+        handleSpacingIndicator.textContent = result.handleSpacing;
       }
     });
     // // 스킨
@@ -294,13 +298,13 @@ const DOMContentLoadedHandler = async () => {
   });
 
   // 커스텀 기능
-  function propotionDotCount(sizeRatio) {
-    return Math.round(2000 / sizeRatio);
+  function propotionHandleSpacing(sizeRatio) {
+    return Math.round(60 - 2000 / sizeRatio);
   }
-  function updateDotCount(dotCount) {
-    DOT_COUNT = dotCount;
-    dotCountInput.value = DOT_COUNT;
-    dotCountIndicator.textContent = DOT_COUNT;
+  function updateHandleSpacing(handleSpacing) {
+    HANDEL_SPACING = handleSpacing;
+    handleSpacingInput.value = HANDEL_SPACING;
+    handleSpacingIndicator.textContent = HANDEL_SPACING;
   }
 
   // // 사이즈
@@ -313,7 +317,7 @@ const DOMContentLoadedHandler = async () => {
       sizeIndicator.textContent = `${value}%`;
 
       if (!ALLOW_DOTS_CUSTOM) {
-        updateDotCount(propotionDotCount(SIZE_RATIO));
+        updateHandleSpacing(propotionHandleSpacing(SIZE_RATIO));
       }
     }
   });
@@ -324,7 +328,7 @@ const DOMContentLoadedHandler = async () => {
       const { value } = e.target;
       updateStorageItem({ size: value });
       if (!ALLOW_DOTS_CUSTOM) {
-        updateStorageItem({ dotCount: DOT_COUNT });
+        updateStorageItem({ handleSpacing: HANDEL_SPACING });
       }
     }
   });
@@ -338,28 +342,28 @@ const DOMContentLoadedHandler = async () => {
       ALLOW_DOTS_CUSTOM = checked;
       updateStorageItem({ allowDotsCustom: checked });
 
-      updateDotCount(propotionDotCount(SIZE_RATIO));
-      updateStorageItem({ dotCount: DOT_COUNT });
-      dotCountInput.disabled = !checked;
+      updateHandleSpacing(propotionHandleSpacing(SIZE_RATIO));
+      updateStorageItem({ handleSpacing: HANDEL_SPACING });
+      handleSpacingInput.disabled = !checked;
     }
   });
 
   // // 고정점 개수
-  dotCountInput.addEventListener("input", (e) => {
+  handleSpacingInput.addEventListener("input", (e) => {
     if (!IS_PAID) {
-      e.target.value = 20;
+      e.target.value = 40;
     } else {
       const { value } = e.target;
-      DOT_COUNT = value;
-      dotCountIndicator.textContent = `${value}`;
+      HANDEL_SPACING = value;
+      handleSpacingIndicator.textContent = `${value}`;
     }
   });
-  dotCountInput.addEventListener("change", (e) => {
+  handleSpacingInput.addEventListener("change", (e) => {
     if (!IS_PAID) {
-      e.target.value = 20;
+      e.target.value = 40;
     } else {
       const { value } = e.target;
-      updateStorageItem({ dotCount: value });
+      updateStorageItem({ handleSpacing: value });
     }
   });
 
@@ -452,7 +456,7 @@ function reset() {
   removeStorageItem("isPaid");
   removeStorageItem("size");
   removeStorageItem("allowDotsCustom");
-  removeStorageItem("dotCount");
+  removeStorageItem("handleSpacing");
   removeStorageItem("skin");
   removeStorageItem("movementType");
   removeStorageItem("paidContentsUsed");
