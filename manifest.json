@@ -3,8 +3,8 @@
   "version": "1.0",
   "name": "__MSG_appName__",
   "description": "__MSG_appDesc__",
-  "default_locale": "ko",
-  "permissions": ["tabs", "activeTab", "storage"],
+  "default_locale": "en",
+  "permissions": ["storage"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

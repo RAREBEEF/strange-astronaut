@@ -133,10 +133,11 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 });
 // 팝업에서 메세지를 보낼 경우 여기에서 가장 먼저 수신한다.
 const receiveMessage = async (e) => {
+  console.log(e.origin);
   // 보안 검사
   if (
     e.origin !== window.location.origin ||
-    e.origin.indexOf("localhost:3000") <= -1
+    e.origin !== "https://strange-astronaut.rarebeef.co.kr"
   ) {
     return;
   }
