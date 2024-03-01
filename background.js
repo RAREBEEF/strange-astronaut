@@ -1,17 +1,15 @@
+const TIMER = { startAt: null, interval: null };
 let IS_PAID = null;
 let ENABLED = null;
-let TIMER_START_AT = null;
-let TIMER_INTERVAL = null;
 
 function startTimer() {
-  if (!TIMER_INTERVAL) {
+  if (!TIMER.interval) {
     const now = Date.now();
     updateStorageItem({ timerStartAt: now });
 
-    TIMER_START_AT = now;
-    TIMER_INTERVAL = setInterval(() => {
-      console.log(TIMER_START_AT, "back");
-      const remain = (300000 + TIMER_START_AT - Date.now()) / 1000;
+    TIMER.startAt = now;
+    TIMER.interval = setInterval(() => {
+      const remain = (300000 + TIMER.startAt - Date.now()) / 1000;
       if (remain <= 0) {
         shutdownTimer();
         updateStorageItem({ enabled: false });
@@ -21,19 +19,19 @@ function startTimer() {
 }
 
 function shutdownTimer() {
-  if (!!TIMER_INTERVAL) {
-    clearInterval(TIMER_INTERVAL);
+  if (!!TIMER.interval) {
+    clearInterval(TIMER.interval);
 
-    TIMER_INTERVAL = null;
-    TIMER_START_AT = null;
+    TIMER.interval = null;
+    TIMER.startAt = null;
   }
 }
 
 // 초기화
 async function init() {
   // 결제 여부 초기화
-  await getStorageItem("isPaid", (result) => {
-    if (Object.keys(result).length > 0 && result.isPaid === true) {
+  await getStorageItem("isPaid", async (result) => {
+    if (!!result?.isPaid) {
       IS_PAID = true;
     } else {
       IS_PAID = false;
@@ -44,9 +42,14 @@ async function init() {
   // 토글 여부 초기화
   await getStorageItem("enabled", (result) => {
     if (Object.keys(result).length <= 0) {
+      chrome.tabs.query({}, function (arrayOfTabs) {
+        arrayOfTabs?.forEach((tab) => {
+          chrome.tabs.reload(tab.id);
+        });
+      });
       try {
         chrome.windows.create({
-          url: `https://strange-astronaut.rarebeef.co.kr/tutorial`,
+          url: `http://localhost:3000/tutorial`,
           width: 800,
           height: 900,
           type: "popup",
@@ -56,7 +59,7 @@ async function init() {
       }
       updateStorageItem({ enabled: true });
       ENABLED = false;
-    } else if (result.enabled === true) {
+    } else if (!!result?.enabled) {
       ENABLED = true;
     } else {
       ENABLED = false;
@@ -107,10 +110,10 @@ chrome.runtime.onMessage.addListener(async function (
 
   if (message.openPayment) {
     openPayment(sendResponse);
-  } else if (message.paymentComplete) {
+  } else if (message.paymentCompleted) {
     paymentComplete(sendResponse);
   } else if (message.timerStartAt) {
-    sendResponse(TIMER_START_AT);
+    sendResponse(TIMER.startAt);
   } else if (message.swKeepAlive) {
     sendResponse("sw online");
   } else if (message.closePayment) {
@@ -119,6 +122,8 @@ chrome.runtime.onMessage.addListener(async function (
     openManage(sendResponse);
   } else if (message.paymentCanceled) {
     paymentCancel(sendResponse);
+  } else if (message.openRefund) {
+    openRefund(sendResponse);
   }
 });
 
@@ -128,7 +133,7 @@ function openPayment(sendResponse) {
   try {
     chrome.windows.create(
       {
-        url: `https://strange-astronaut.rarebeef.co.kr/purchase`,
+        url: `http://localhost:3000/purchase`,
         width: 800,
         height: 900,
         type: "popup",
@@ -147,9 +152,7 @@ function openPayment(sendResponse) {
 async function closePayment(sendResponse) {
   let closePopupStatus = true;
   await getStorageItem("paymentPopupId", (result) => {
-    if (Object.keys(result).length <= 0) {
-      return;
-    } else {
+    if (!!result?.paymentPopupId) {
       try {
         chrome.windows.remove(result.paymentPopupId, () => {
           console.log("Popup closed");
@@ -175,7 +178,25 @@ function openManage(sendResponse) {
   let openPopupStatus = true;
   try {
     chrome.windows.create({
-      url: `https://strange-astronaut.rarebeef.co.kr/manage`,
+      url: `http://localhost:3000/manage`,
+      width: 800,
+      height: 900,
+      type: "popup",
+    });
+  } catch (error) {
+    console.log(error);
+    openPopupStatus = false;
+  } finally {
+    sendResponse({ success: openPopupStatus });
+  }
+}
+
+// 환불 팝업 열기/닫기
+function openRefund(sendResponse) {
+  let openPopupStatus = true;
+  try {
+    chrome.windows.create({
+      url: `http://localhost:3000/manage/refund`,
       width: 800,
       height: 900,
       type: "popup",
@@ -191,10 +212,10 @@ function openManage(sendResponse) {
 function paymentCancel(sendResponse = null) {
   updateStorageItem({ isPaid: false });
   updateStorageItem({ skin: "default" });
-  updateStorageItem({ allowKeyboardControl: false });
   updateStorageItem({ allowDotsCustom: false });
   updateStorageItem({ handleSpacing: 40 });
   updateStorageItem({ size: 100 });
+  updateStorageItem({ glitchIncludesAllSkins: false });
   sendResponse && sendResponse("Cancel confirmed at background.");
 }
 
@@ -205,8 +226,8 @@ function updateStorageItem(item) {
 function getStorageItem(key, callback = () => null) {
   return new Promise((res, rej) => {
     chrome.storage.sync.get([key], (result) => {
-      callback(result);
-      res(result);
+      callback(result || {});
+      res(result || {});
     });
   });
 }

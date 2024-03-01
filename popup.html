@@ -8,15 +8,36 @@
   </head>
   <body>
     <main id="container">
+      <section id="account">
+        <span id="account-id"></span>
+      </section>
       <hgroup class="header-wrapper">
         <img id="header-img" class="header" alt="STRANGE-ASTRONAUT" />
+        <section id="sign">
+          <a
+            id="signIn"
+            href="http://localhost:3000/signin?from=appLogin"
+            target="_blank"
+            >SIGN IN</a
+          >
+          <button id="signOut">SIGN OUT</button>
+        </section>
       </hgroup>
 
+      <iframe
+        id="iframe"
+        class="card"
+        src="sandbox.html"
+        sandbox="allow-scripts"
+      ></iframe>
+
       <section id="toggle-wrapper" class="card">
-        <label for="toggle-btn" class="card-header">ON/OFF</label>
+        <h3 class="card-header">ON/OFF</h3>
         <div class="card-content">
           <div id="timer-wrapper">
-            <p id="timer-description">30초마다 자동 종료(무료 평가판)</p>
+            <p id="timer-description">
+              Free versions automatically turns off every 5 minutes.
+            </p>
             <div id="timer">
               <p id="timer-minute">05</p>
               <p class="timer-colon">:</p>
@@ -27,19 +48,68 @@
         </div>
       </section>
 
+      <section id="payment-wrapper" class="card">
+        <h3 class="card-header">GET PREMIUM</h3>
+        <div class="card-content">
+          <div class="description-wrapper">
+            <p id="payment-description">
+              Get new skins and customizations without time limits.
+            </p>
+          </div>
+          <div class="btn-wrapper">
+            <button id="payment-btn">
+              <p class="icon">🚀</p>
+              <p id="payment-btn-text" class="text">GET PREMIUM</p>
+            </button>
+            <button id="restore-btn" class="restore-payment">
+              RESTORE PURCHASE
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section id="premium-section" class="card">
         <h3 class="card-header">CUSTOMIZE</h3>
         <div class="card-content">
+          <label class="customize-glitch-type-wrapper">
+            <input id="customize-glitch-type-input" type="checkbox" />
+            glitch includes all skins</label
+          >
           <form id="customize-skin-wrapper">
             <label
               ><img id="default-skin-thumb" alt="default skin" />
-              <p id="customize-skin-default-label">기본</p>
+              <p id="customize-skin-default-label">DEFAULT</p>
               <input type="radio" name="skin" value="default" checked
             /></label>
             <label
               ><img id="glitch-skin-thumb" alt="glitch skin" />
-              <p id="customize-skin-glitch-label">글리치</p>
+              <p id="customize-skin-glitch-label">GLITCH</p>
               <input type="radio" name="skin" value="glitch"
+            /></label>
+            <label
+              ><img id="black-skin-thumb" alt="black skin" />
+              <p id="customize-skin-black-label">BLACK</p>
+              <input type="radio" name="skin" value="black"
+            /></label>
+            <label
+              ><img id="blue-skin-thumb" alt="blue skin" />
+              <p id="customize-skin-blue-label">BLUE</p>
+              <input type="radio" name="skin" value="blue"
+            /></label>
+            <label
+              ><img id="red-skin-thumb" alt="red skin" />
+              <p id="customize-skin-red-label">RED</p>
+              <input type="radio" name="skin" value="red"
+            /></label>
+            <label
+              ><img id="green-skin-thumb" alt="green skin" />
+              <p id="customize-skin-green-label">GREEN</p>
+              <input type="radio" name="skin" value="green"
+            /></label>
+            <label
+              ><img id="pink-skin-thumb" alt="pink skin" />
+              <p id="customize-skin-pink-label">PINK</p>
+              <input type="radio" name="skin" value="pink"
             /></label>
             <label>
               <p id="skin-coming-soon">coming soon</p>
@@ -51,7 +121,7 @@
             class="customize-item"
             for="customize-size-input"
             ><h4 class="customize-item-header" id="customize-size-label">
-              크기 조절
+              size
             </h4>
             <input
               id="customize-size-input"
@@ -77,7 +147,7 @@
                 class="customize-item-header"
                 id="customize-handle-spacing-label"
               >
-                고정점 개수
+                handle spacing
               </h4>
             </div>
             <input
@@ -95,7 +165,7 @@
               class="customize-item-header"
               id="customize-movement-type-label"
             >
-              이동 방식
+              movement type
             </h4>
             <label>
               <input type="radio" name="movement-type" value="A" checked />
@@ -109,57 +179,34 @@
         </div>
         <div id="locker">PREMIUM REQUIRE</div>
       </section>
-
-      <section id="payment-wrapper" class="card">
-        <h3 class="card-header">GET PREMIUM</h3>
-        <div class="card-content">
-          <div class="description-wrapper">
-            <p id="payment-description">
-              우주왕복선을 호출해 우주비행사의 친구들을 시간 제한 없이 이용해
-              보세요.
-            </p>
-          </div>
-          <div class="btn-wrapper">
-            <button id="payment-btn">
-              <p class="icon">🚀</p>
-              <p id="payment-btn-text" class="text">우주왕복선 호출하기</p>
-            </button>
-            <button id="restore-btn" class="restore-payment">구매 복원</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="lang-select-wrapper card">
-        <label for="lang-select" class="card-header">Language</label>
-        <div class="card-content">
-          <select id="lang-select" value="en">
-            <option value="en">🇬🇧 English</option>
-            <option value="ko">🇰🇷 한국어</option>
-          </select>
-        </div>
-      </section>
-
       <footer id="footer">
         <p>&copy; 2023. RAREBEEF All Rights Reserved.</p>
         <p id="copyright">
-          &quot;Strange Astronaut&quot;과 관련된 모든 캐릭터와 자산은
-          &quot;RAREBEEF&quot;의 지적재산권에 속합니다.
+          all characters and assets related to "Strange Astronaut" belong to the
+          intellectual property rights of "RAREBEEF".
         </p>
         <p>
           <a
             id="termsOfUse"
-            href="https://strange-astronaut.rarebeef.co.kr/terms-of-use"
+            href="http://localhost:3000/terms-of-use"
             target="_blank"
-            >이용 약관.</a
+            >terms of use.</a
           >
           <a
             id="privacyPolicy"
-            href="https://strange-astronaut.rarebeef.co.kr/privacy-policy"
+            href="http://localhost:3000/privacy-policy"
             target="_blank"
-            >개인정보 처리방침.</a
+            >privacy policy.</a
           >
         </p>
       </footer>
+      <!-- 여기부터 빌드 시 삭제 -->
+      <button id="date-back">마지막 체크일 7일 전으로</button>
+      <button id="date-del">마지막 체크일 지우기</button>
+      <button id="auth-del">자동 로그인 정보 지우기</button>
+      <button id="isPaid-true">결제됨</button>
+      <button id="isPaid-false">결제 안됨</button>
+      <!-- 여기까지 빌드 시 삭제 -->
     </main>
   </body>
 </html>

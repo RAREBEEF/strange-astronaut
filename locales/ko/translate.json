@@ -15,7 +15,12 @@
     "allowKeyboard": "키보드 컨트롤 허용",
     "skin": {
       "default": "기본",
-      "glitch": "글리치"
+      "glitch": "글리치",
+      "black": "블랙",
+      "red": "레드",
+      "green": "그린",
+      "pink": "핑크",
+      "blue": "블루"
     },
     "movementType": "이동 방식"
   },

@@ -15,7 +15,12 @@
     "allowKeyboard": "allow keyboard control",
     "skin": {
       "default": "DEFAULT",
-      "glitch": "GLITCH"
+      "glitch": "GLITCH",
+      "black": "BLACK",
+      "red": "RED",
+      "green": "GREEN",
+      "pink": "PINK",
+      "blue": "BLUE"
     },
     "movementType": "movement type"
   },
