@@ -1,31 +1,31 @@
-const TIMER = { startAt: null, interval: null };
+// const TIMER = { startAt: null, interval: null };
 let IS_PAID = null;
 let ENABLED = null;
 
-function startTimer() {
-  if (!TIMER.interval) {
-    const now = Date.now();
-    updateStorageItem({ timerStartAt: now });
+// function startTimer() {
+//   if (!TIMER.interval) {
+//     const now = Date.now();
+//     updateStorageItem({ timerStartAt: now });
 
-    TIMER.startAt = now;
-    TIMER.interval = setInterval(() => {
-      const remain = (300000 + TIMER.startAt - Date.now()) / 1000;
-      if (remain <= 0) {
-        shutdownTimer();
-        updateStorageItem({ enabled: false });
-      }
-    }, 1000);
-  }
-}
+//     TIMER.startAt = now;
+//     TIMER.interval = setInterval(() => {
+//       const remain = (300000 + TIMER.startAt - Date.now()) / 1000;
+//       if (remain <= 0) {
+//         shutdownTimer();
+//         updateStorageItem({ enabled: false });
+//       }
+//     }, 1000);
+//   }
+// }
 
-function shutdownTimer() {
-  if (!!TIMER.interval) {
-    clearInterval(TIMER.interval);
+// function shutdownTimer() {
+//   if (!!TIMER.interval) {
+//     clearInterval(TIMER.interval);
 
-    TIMER.interval = null;
-    TIMER.startAt = null;
-  }
-}
+//     TIMER.interval = null;
+//     TIMER.startAt = null;
+//   }
+// }
 
 // 초기화
 async function init() {
@@ -66,21 +66,21 @@ async function init() {
     }
   });
 
-  updateTimerStatus();
+  // updateTimerStatus();
 }
 
-// 앱 상태 체크
-function updateTimerStatus() {
-  if (ENABLED === null || IS_PAID === null) {
-    return;
-  } else if (IS_PAID) {
-    shutdownTimer();
-  } else if (ENABLED) {
-    startTimer();
-  } else {
-    shutdownTimer();
-  }
-}
+// // 앱 상태 체크
+// function updateTimerStatus() {
+//   if (ENABLED === null || IS_PAID === null) {
+//     return;
+//   } else if (IS_PAID) {
+//     shutdownTimer();
+//   } else if (ENABLED) {
+//     startTimer();
+//   } else {
+//     shutdownTimer();
+//   }
+// }
 
 // 결제 여부 및 체험 종료 감시
 chrome.storage.onChanged.addListener(function (changes, namespace) {
@@ -95,7 +95,7 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     }
   }
 
-  updateTimerStatus();
+  // updateTimerStatus();
 });
 
 // 메세지 수신 (팝업 요청 or 결제 완료 or 체험 시작 시간)
@@ -112,8 +112,6 @@ chrome.runtime.onMessage.addListener(async function (
     openPayment(sendResponse);
   } else if (message.paymentCompleted) {
     paymentComplete(sendResponse);
-  } else if (message.timerStartAt) {
-    sendResponse(TIMER.startAt);
   } else if (message.swKeepAlive) {
     sendResponse("sw online");
   } else if (message.closePayment) {
@@ -125,6 +123,9 @@ chrome.runtime.onMessage.addListener(async function (
   } else if (message.openRefund) {
     openRefund(sendResponse);
   }
+  // else if (message.timerStartAt) {
+  //   sendResponse(TIMER.startAt);
+  // }
 });
 
 // 결제 팝업 열기/닫기

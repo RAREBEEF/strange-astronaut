@@ -1,7 +1,7 @@
 let IS_PAID = null;
 let ENABLED = null;
 let USER_DATA = null;
-const TIMER = { interval: null };
+// const TIMER = { interval: null };
 const CUSTOMIZE = {
   allowDotCustom: false,
   handleSpacing: 40,
@@ -85,9 +85,9 @@ const DOMContentLoadedHandler = async () => {
   // // 토글
   const toggleBtn = document.getElementById("toggle-btn");
   // // 타이머
-  const timerWrapper = document.getElementById("timer-wrapper");
-  const timerMinute = document.getElementById("timer-minute");
-  const timerSecond = document.getElementById("timer-second");
+  // const timerWrapper = document.getElementById("timer-wrapper");
+  // const timerMinute = document.getElementById("timer-minute");
+  // const timerSecond = document.getElementById("timer-second");
   // // 결제
   const paymentSection = document.getElementById("payment-wrapper");
   const paymentBtn = document.getElementById("payment-btn");
@@ -134,48 +134,48 @@ const DOMContentLoadedHandler = async () => {
   const signInBtn = document.getElementById("signIn");
   const signOutBtn = document.getElementById("signOut");
 
-  function updateTimerStatus() {
-    if (ENABLED === null || IS_PAID === null) {
-      return;
-    } else if (IS_PAID) {
-      shutdownTimer();
-    } else if (ENABLED) {
-      startTimer();
-    } else {
-      shutdownTimer();
-    }
-  }
+  // function updateTimerStatus() {
+  //   if (ENABLED === null || IS_PAID === null) {
+  //     return;
+  //   } else if (IS_PAID) {
+  //     shutdownTimer();
+  //   } else if (ENABLED) {
+  //     startTimer();
+  //   } else {
+  //     shutdownTimer();
+  //   }
+  // }
 
-  function startTimer() {
-    if (!TIMER.interval) {
-      timerSecond.textContent = "--";
-      timerMinute.textContent = "";
+  // function startTimer() {
+  //   if (!TIMER.interval) {
+  //     timerSecond.textContent = "--";
+  //     timerMinute.textContent = "";
 
-      let timerStartAt = null;
-      sendMessage({ timerStartAt: true }, (res) => {
-        timerStartAt = res;
-      });
+  //     let timerStartAt = null;
+  //     sendMessage({ timerStartAt: true }, (res) => {
+  //       timerStartAt = res;
+  //     });
 
-      TIMER.interval = setInterval(() => {
-        const remain = (300000 + timerStartAt - Date.now()) / 1000;
-        const [H, M, S] = secToHMS(remain);
-        timerMinute.textContent = M.toString().padStart(2, "0");
-        timerSecond.textContent = Math.round(S).toString().padStart(2, "0");
-        if (remain <= 0) {
-          shutdownTimer();
-        }
-      }, 100);
-    }
-  }
+  //     TIMER.interval = setInterval(() => {
+  //       const remain = (300000 + timerStartAt - Date.now()) / 1000;
+  //       const [H, M, S] = secToHMS(remain);
+  //       timerMinute.textContent = M.toString().padStart(2, "0");
+  //       timerSecond.textContent = Math.round(S).toString().padStart(2, "0");
+  //       if (remain <= 0) {
+  //         shutdownTimer();
+  //       }
+  //     }, 100);
+  //   }
+  // }
 
-  function shutdownTimer() {
-    if (!!TIMER.interval) {
-      clearInterval(TIMER.interval);
-      TIMER.interval = null;
-      timerMinute.textContent = "05";
-      timerSecond.textContent = "00";
-    }
-  }
+  // function shutdownTimer() {
+  //   if (!!TIMER.interval) {
+  //     clearInterval(TIMER.interval);
+  //     TIMER.interval = null;
+  //     timerMinute.textContent = "05";
+  //     timerSecond.textContent = "00";
+  //   }
+  // }
 
   // 로그인/아웃 ui 업데이트 함수
   function updateSignUi(isSigned) {
@@ -278,7 +278,7 @@ const DOMContentLoadedHandler = async () => {
       }
     });
 
-    updateTimerStatus();
+    // updateTimerStatus();
   }
 
   // 스토리지 변경 감시
@@ -303,7 +303,7 @@ const DOMContentLoadedHandler = async () => {
       }
     }
 
-    updateTimerStatus();
+    // updateTimerStatus();
   });
 
   // 결제 여부에 따른 설정
@@ -313,12 +313,12 @@ const DOMContentLoadedHandler = async () => {
         IS_PAID = true;
         paymentSection.style.display = "none";
         locker.style.display = "none";
-        timerWrapper.style.display = "none";
+        // timerWrapper.style.display = "none";
       } else {
         IS_PAID = false;
         paymentSection.style.display = "flex";
         locker.style.display = "flex";
-        timerWrapper.style.display = "flex";
+        // timerWrapper.style.display = "flex";
         // 결제 버튼
         paymentBtn.addEventListener("click", () => {
           // 결제 팝업 열기 요청 메세지 전송

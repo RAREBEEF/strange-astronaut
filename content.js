@@ -209,7 +209,7 @@ const skin = {
 
 // variable
 let isPaid = false;
-let timerStartAt = null;
+// let timerStartAt = null;
 let headToRight = true;
 let dots = {};
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
@@ -225,6 +225,10 @@ let bodyWidth = Math.max(...cvsSize) * 0.01 * sizeRatio;
 let bodyHeight = bodyWidth * 2.3;
 let limbsWidth = bodyWidth * 0.8;
 let movementType = "A";
+
+function sendMessage(message, callback = () => null) {
+  chrome.runtime.sendMessage(message, (res) => callback(res));
+}
 
 // 서비스워커가 꺼지지 않도록
 const swKeepAlive = {
@@ -243,11 +247,11 @@ getStorageItem("enabled", (result) => {
   }
 });
 // 타이머 초기화
-getStorageItem("timerStartAt", (result) => {
-  if (!!result?.timerStartAt) {
-    timerStartAt = result.timerStartAt;
-  }
-});
+// getStorageItem("timerStartAt", (result) => {
+//   if (!!result?.timerStartAt) {
+//     timerStartAt = result.timerStartAt;
+//   }
+// });
 // 결제 여부 초기화
 getStorageItem("isPaid", (result) => {
   isPaid = !!result?.isPaid;
@@ -301,9 +305,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
       } else {
         isPaid = false;
       }
-    } else if (key === "timerStartAt") {
-      const startAt = changes[key].newValue;
-      timerStartAt = startAt;
     } else if (key === "size") {
       const size = changes[key].newValue;
       customizeSize(size);
@@ -320,6 +321,10 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
       const newType = changes[key].newValue;
       movementType = newType;
     }
+    // else if (key === "timerStartAt") {
+    //   const startAt = changes[key].newValue;
+    //   timerStartAt = startAt;
+    // }
   }
 });
 // 팝업에서 메세지를 보낼 경우 여기에서 가장 먼저 수신한다.
@@ -372,9 +377,6 @@ async function getStorageItem(key, callback = () => null) {
     res = result || {};
   });
   return res;
-}
-function sendMessage(message, callback = () => null) {
-  chrome.runtime.sendMessage(message, (res) => callback(res));
 }
 
 const createDots = (cvsSize) => {
@@ -1018,7 +1020,7 @@ const draw = () => {
     }
   }
 
-  // // 머리 및 타이머
+  // // 머리
   const headImg = new Image();
   headImg.src = headToRight
     ? skin[skin.current].image.head.right
@@ -1045,18 +1047,18 @@ const draw = () => {
     );
   });
 
-  !isPaid &&
-    drawCommands3.push((ctx) => {
-      const [H, M, S] = secToHMS(
-        Math.round((300000 + timerStartAt - Date.now()) / 1000)
-      );
-      const text = `${M.toString().padStart(2, "0")}:${Math.round(S)
-        .toString()
-        .padStart(2, "0")}`;
-      ctx.fillStyle = "black";
-      ctx.font = "24px monospace";
-      ctx.fillText(text, bodyX - 36, bodyY - bodyHeight * 1.5);
-    });
+  // !isPaid &&
+  //   drawCommands3.push((ctx) => {
+  //     const [H, M, S] = secToHMS(
+  //       Math.round((300000 + timerStartAt - Date.now()) / 1000)
+  //     );
+  //     const text = `${M.toString().padStart(2, "0")}:${Math.round(S)
+  //       .toString()
+  //       .padStart(2, "0")}`;
+  //     ctx.fillStyle = "black";
+  //     ctx.font = "24px monospace";
+  //     ctx.fillText(text, bodyX - 36, bodyY - bodyHeight * 1.5);
+  //   });
 
   // 그림자 그리기 명령을 drawCommands1으로 합치기
   drawCommands1.unshift(
