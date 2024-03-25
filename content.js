@@ -469,8 +469,11 @@ const updateFeet = () => {
     distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
   }
 
-  const dampingFactor = 0.5;
-  const curSpeed = distance / (movementType === "B" ? 2.5 : 10);
+  const dampingFactor = 0.2;
+  const curSpeed = Math.min(
+    distance / (movementType === "B" ? 5 : 20),
+    bodyWidth * 1.5
+  );
   const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
 
   if (SPEED > 0) {
@@ -518,24 +521,24 @@ const updateFeet = () => {
     sortedQuadrant3 = DOT_SORT(quadrant3),
     sortedQuadrant4 = DOT_SORT(quadrant4);
 
-  const nearDot1 = sortedQuadrant1[0]?.id,
-    nearDot2 = sortedQuadrant2[0]?.id,
-    nearDot3 = sortedQuadrant3[0]?.id,
-    nearDot4 = sortedQuadrant4[0]?.id,
-    nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
-
-  // 다리는 몸통과 너무 가깝지 않도록 조절
   // const nearDot1 = sortedQuadrant1[0]?.id,
   //   nearDot2 = sortedQuadrant2[0]?.id,
-  //   nearDot3 =
-  //     dots[sortedQuadrant3[0]?.id]?.y > bodyY + bodyHeight * 0.3
-  //       ? sortedQuadrant3[0]?.id
-  //       : sortedQuadrant3[1]?.id,
-  //   nearDot4 =
-  //     dots[sortedQuadrant4[0]?.id]?.y > bodyY + bodyHeight * 0.3
-  //       ? sortedQuadrant4[0]?.id
-  //       : sortedQuadrant4[1]?.id,
+  //   nearDot3 = sortedQuadrant3[0]?.id,
+  //   nearDot4 = sortedQuadrant4[0]?.id,
   //   nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
+
+  // 다리는 몸통과 너무 가깝지 않도록 조절
+  const nearDot1 = sortedQuadrant1[0]?.id,
+    nearDot2 = sortedQuadrant2[0]?.id,
+    nearDot3 =
+      dots[sortedQuadrant3[0]?.id]?.y > bodyY + bodyHeight * 0.3
+        ? sortedQuadrant3[0]?.id
+        : sortedQuadrant3[1]?.id,
+    nearDot4 =
+      dots[sortedQuadrant4[0]?.id]?.y > bodyY + bodyHeight * 0.3
+        ? sortedQuadrant4[0]?.id
+        : sortedQuadrant4[1]?.id,
+    nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
 
   let newFeet = feet;
 
@@ -601,8 +604,9 @@ const updateFeet = () => {
     const deltaY = targetY - footY;
     const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-    const dampingFactor = 0.8;
-    const curSpeed = distance / 2.5;
+    const dampingFactor = 0.6;
+    const curSpeed = Math.min(distance / 3, bodyWidth * 1.5);
+    console.log(curSpeed, bodyWidth);
     const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
 
     if (SPEED > 0) {
