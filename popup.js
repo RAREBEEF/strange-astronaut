@@ -1,11 +1,10 @@
 let IS_PAID = null;
 let ENABLED = null;
 let USER_DATA = null;
-// const TIMER = { interval: null };
 const CUSTOMIZE = {
   allowDotCustom: false,
-  handleSpacing: 40,
   sizeRatio: 100,
+  speedRatio: 100,
 };
 
 // 여기부터 빌드 시 삭제
@@ -81,13 +80,8 @@ const DOMContentLoadedHandler = async () => {
   const headerImg = document.getElementById("header-img");
   headerImg.src = chrome.runtime.getURL("src/images/logo512x265.png");
   // ELEMENTS
-
   // // 토글
   const toggleBtn = document.getElementById("toggle-btn");
-  // // 타이머
-  // const timerWrapper = document.getElementById("timer-wrapper");
-  // const timerMinute = document.getElementById("timer-minute");
-  // const timerSecond = document.getElementById("timer-second");
   // // 결제
   const paymentSection = document.getElementById("payment-wrapper");
   const paymentBtn = document.getElementById("payment-btn");
@@ -96,15 +90,8 @@ const DOMContentLoadedHandler = async () => {
   const locker = document.getElementById("locker");
   const sizeInput = document.getElementById("customize-size-input");
   const sizeIndicator = document.getElementById("size-indicator");
-  const handleSpacingInput = document.getElementById(
-    "customize-handle-spacing-input"
-  );
-  const handleSpacingIndicator = document.getElementById(
-    "handle-spacing-indicator"
-  );
-  const allowDotsCustomInput = document.getElementById(
-    "customize-allow-dots-custom-input"
-  );
+  const speedInput = document.getElementById("customize-speed-input");
+  const speedIndicator = document.getElementById("speed-indicator");
   const glitchTypeInput = document.getElementById(
     "customize-glitch-type-input"
   );
@@ -125,57 +112,10 @@ const DOMContentLoadedHandler = async () => {
   }
   const skinForm = document.getElementById("customize-skin-wrapper");
   const skinRadios = skinForm.elements["skin"];
-  const movementTypeForm = document.getElementById(
-    "customize-movement-type-wrapper"
-  );
-  const movementTypeRadios = movementTypeForm.elements["movement-type"];
   // // 로그인/아웃
   const accountId = document.getElementById("account-id");
   const signInBtn = document.getElementById("signIn");
   const signOutBtn = document.getElementById("signOut");
-
-  // function updateTimerStatus() {
-  //   if (ENABLED === null || IS_PAID === null) {
-  //     return;
-  //   } else if (IS_PAID) {
-  //     shutdownTimer();
-  //   } else if (ENABLED) {
-  //     startTimer();
-  //   } else {
-  //     shutdownTimer();
-  //   }
-  // }
-
-  // function startTimer() {
-  //   if (!TIMER.interval) {
-  //     timerSecond.textContent = "--";
-  //     timerMinute.textContent = "";
-
-  //     let timerStartAt = null;
-  //     sendMessage({ timerStartAt: true }, (res) => {
-  //       timerStartAt = res;
-  //     });
-
-  //     TIMER.interval = setInterval(() => {
-  //       const remain = (300000 + timerStartAt - Date.now()) / 1000;
-  //       const [H, M, S] = secToHMS(remain);
-  //       timerMinute.textContent = M.toString().padStart(2, "0");
-  //       timerSecond.textContent = Math.round(S).toString().padStart(2, "0");
-  //       if (remain <= 0) {
-  //         shutdownTimer();
-  //       }
-  //     }, 100);
-  //   }
-  // }
-
-  // function shutdownTimer() {
-  //   if (!!TIMER.interval) {
-  //     clearInterval(TIMER.interval);
-  //     TIMER.interval = null;
-  //     timerMinute.textContent = "05";
-  //     timerSecond.textContent = "00";
-  //   }
-  // }
 
   // 로그인/아웃 ui 업데이트 함수
   function updateSignUi(isSigned) {
@@ -241,19 +181,12 @@ const DOMContentLoadedHandler = async () => {
         sizeIndicator.textContent = `${result.size}%`;
       }
     });
-    // // 고정점 변경 허용
-    getStorageItem("allowDotsCustom", (result) => {
-      const allowDotsCustom = !!result?.allowDotsCustom === true;
-      CUSTOMIZE.allowDotCustom = allowDotsCustom;
-      allowDotsCustomInput.checked = allowDotsCustom;
-      handleSpacingInput.disabled = !allowDotsCustom;
-    });
-    // // 고정점
-    getStorageItem("handleSpacing", (result) => {
-      if (!!result?.handleSpacing) {
-        CUSTOMIZE.handleSpacing = result.handleSpacing;
-        handleSpacingInput.value = result.handleSpacing;
-        handleSpacingIndicator.textContent = result.handleSpacing;
+    // // 사이즈
+    getStorageItem("speed", (result) => {
+      if (!!result?.speed) {
+        CUSTOMIZE.speedRatio = result.speed;
+        speedInput.value = result.speed;
+        speedIndicator.textContent = `${result.speed}%`;
       }
     });
     // // 스킨
@@ -266,19 +199,6 @@ const DOMContentLoadedHandler = async () => {
         }
       }
     });
-    // // 이동 방식
-    getStorageItem("movementType", (result) => {
-      const selectedType =
-        IS_PAID && !!result?.movementType ? result.movementType : "A";
-      for (let movementTypeRadio of movementTypeRadios) {
-        if (movementTypeRadio.value === selectedType) {
-          movementTypeRadio.checked = true;
-          break;
-        }
-      }
-    });
-
-    // updateTimerStatus();
   }
 
   // 스토리지 변경 감시
@@ -313,12 +233,10 @@ const DOMContentLoadedHandler = async () => {
         IS_PAID = true;
         paymentSection.style.display = "none";
         locker.style.display = "none";
-        // timerWrapper.style.display = "none";
       } else {
         IS_PAID = false;
         paymentSection.style.display = "flex";
         locker.style.display = "flex";
-        // timerWrapper.style.display = "flex";
         // 결제 버튼
         paymentBtn.addEventListener("click", () => {
           // 결제 팝업 열기 요청 메세지 전송
@@ -352,15 +270,6 @@ const DOMContentLoadedHandler = async () => {
   });
 
   // 커스텀 기능
-  function propotionHandleSpacing(sizeRatio) {
-    return Math.round(60 - 2000 / sizeRatio);
-  }
-  function updateHandleSpacing(handleSpacing) {
-    CUSTOMIZE.handleSpacing = handleSpacing;
-    handleSpacingInput.value = CUSTOMIZE.handleSpacing;
-    handleSpacingIndicator.textContent = CUSTOMIZE.handleSpacing;
-  }
-
   // // 글리치 타입
   glitchTypeInput.addEventListener("change", (e) => {
     if (!IS_PAID) {
@@ -379,10 +288,6 @@ const DOMContentLoadedHandler = async () => {
       const { value } = e.target;
       CUSTOMIZE.sizeRatio = value;
       sizeIndicator.textContent = `${value}%`;
-
-      if (!CUSTOMIZE.allowDotCustom) {
-        updateHandleSpacing(propotionHandleSpacing(CUSTOMIZE.sizeRatio));
-      }
     }
   });
   sizeInput.addEventListener("change", (e) => {
@@ -391,43 +296,25 @@ const DOMContentLoadedHandler = async () => {
     } else {
       const { value } = e.target;
       updateStorageItem({ size: value });
-      if (!CUSTOMIZE.allowDotCustom) {
-        updateStorageItem({ handleSpacing: CUSTOMIZE.handleSpacing });
-      }
     }
   });
 
-  // // 고정점 변경 허용
-  allowDotsCustomInput.addEventListener("change", (e) => {
+  // // 스피드
+  speedInput.addEventListener("input", (e) => {
     if (!IS_PAID) {
-      e.target.checked = false;
-    } else {
-      const { checked } = e.target;
-      CUSTOMIZE.allowDotCustom = checked;
-      updateStorageItem({ allowDotsCustom: checked });
-
-      updateHandleSpacing(propotionHandleSpacing(CUSTOMIZE.sizeRatio));
-      updateStorageItem({ handleSpacing: CUSTOMIZE.handleSpacing });
-      handleSpacingInput.disabled = !checked;
-    }
-  });
-
-  // // 고정점 개수
-  handleSpacingInput.addEventListener("input", (e) => {
-    if (!IS_PAID) {
-      e.target.value = 40;
+      e.target.value = 100;
     } else {
       const { value } = e.target;
-      CUSTOMIZE.handleSpacing = value;
-      handleSpacingIndicator.textContent = `${value}`;
+      CUSTOMIZE.speedRatio = value;
+      speedIndicator.textContent = `${value}%`;
     }
   });
-  handleSpacingInput.addEventListener("change", (e) => {
+  speedInput.addEventListener("change", (e) => {
     if (!IS_PAID) {
-      e.target.value = 40;
+      e.target.value = 100;
     } else {
       const { value } = e.target;
-      updateStorageItem({ handleSpacing: value });
+      updateStorageItem({ speed: value });
     }
   });
 
@@ -446,23 +333,6 @@ const DOMContentLoadedHandler = async () => {
       }
     }
     updateStorageItem({ skin: selectedSkin });
-  });
-
-  // 이동 방식 변경
-  movementTypeForm.addEventListener("change", () => {
-    let selectedType = "A";
-    if (IS_PAID) {
-      for (let movementTypeRadio of movementTypeRadios) {
-        if (movementTypeRadio.checked) {
-          if (movementTypeRadio.value !== "A") {
-            updateStorageItem({ paidContentsUsed: true });
-          }
-          selectedType = movementTypeRadio.value;
-          break;
-        }
-      }
-    }
-    updateStorageItem({ movementType: selectedType });
   });
 
   // 구매 복원 버튼
@@ -503,14 +373,9 @@ function getStorageItem(key, callback = () => null) {
 
 function reset() {
   removeStorageItem("enabled");
-  removeStorageItem("pizza");
   removeStorageItem("isPaid");
   removeStorageItem("size");
-  removeStorageItem("allowDotsCustom");
-  removeStorageItem("handleSpacing");
   removeStorageItem("skin");
-  removeStorageItem("movementType");
-  removeStorageItem("paidContentsUsed");
 }
 
 function sendMessage(message, callback = () => null) {
@@ -550,93 +415,3 @@ if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
 }
 
 document.addEventListener("DOMContentLoaded", DOMContentLoadedHandler);
-
-// // 언어 관련
-// const langSelect = document.getElementById("lang-select");
-// const timerDescription = document.getElementById("timer-description");
-// const paymentDescription = document.getElementById("payment-description");
-// const paymentBtnText = document.getElementById("payment-btn-text");
-
-// const customizeMovementTypeLabel = document.getElementById(
-//   "customize-movement-type-label"
-// );
-// const customizeSizeLabel = document.getElementById("customize-size-label");
-// const customizeHandleSpacingLabel = document.getElementById(
-//   "customize-handle-spacing-label"
-// );
-// const customizeSkinDefaultLabel = document.getElementById(
-//   "customize-skin-default-label"
-// );
-// const customizeSkinGlitchLabel = document.getElementById(
-//   "customize-skin-glitch-label"
-// );
-// const customizeSkinBlackLabel = document.getElementById(
-//   "customize-skin-black-label"
-// );
-// const customizeSkinBlueLabel = document.getElementById(
-//   "customize-skin-blue-label"
-// );
-// const customizeSkinRedLabel = document.getElementById(
-//   "customize-skin-red-label"
-// );
-// const customizeSkinGreenLabel = document.getElementById(
-//   "customize-skin-green-label"
-// );
-// const customizeSkinPinkLabel = document.getElementById(
-//   "customize-skin-pink-label"
-// );
-// const termsOfUse = document.getElementById("termsOfUse");
-// const privacyPolicy = document.getElementById("privacyPolicy");
-// const copyright = document.getElementById("copyright");
-// 언어 초기화
-// getStorageItem("lang", (result) => {
-//   changeLang(result.lang);
-// });
-
-// langSelect.addEventListener("change", (e) => {
-//   const lang = e.target.value;
-//   updateStorageItem({ lang });
-//   changeLang(lang);
-// });
-
-// async function changeLang(lang) {
-//   if (!lang) {
-//     const defaultLang = navigator.language || navigator.userLanguage;
-//     if (defaultLang.startsWith("ko")) {
-//       langSelect.value = "ko";
-//       lang = "ko";
-//       updateStorageItem({ lang: "ko" });
-//     } else {
-//       langSelect.value = "en";
-//       lang = "en";
-//       updateStorageItem({ lang: "en" });
-//     }
-//   } else if (lang.startsWith("ko")) {
-//     langSelect.value = "ko";
-//   } else {
-//     langSelect.value = "en";
-//     lang = "en";
-//   }
-
-//   const translateUrl = chrome.runtime.getURL(
-//     `locales/${lang}/translate.json`
-//   );
-//   const translate = await fetch(translateUrl).then((res) => res.json());
-//   timerDescription.textContent = translate.toggle.timer.description;
-//   paymentDescription.textContent = translate.payment.description;
-//   paymentBtnText.textContent = translate.payment.btn;
-//   restoreBtn.textContent = translate.payment.restore;
-//   customizeMovementTypeLabel.textContent = translate.customize.movementType;
-//   customizeSizeLabel.textContent = translate.customize.size;
-//   customizeHandleSpacingLabel.textContent = translate.customize.handleSpacing;
-//   customizeSkinDefaultLabel.textContent = translate.customize.skin.default;
-//   customizeSkinGlitchLabel.textContent = translate.customize.skin.glitch;
-//   customizeSkinBlackLabel.textContent = translate.customize.skin.black;
-//   customizeSkinBlueLabel.textContent = translate.customize.skin.blue;
-//   customizeSkinRedLabel.textContent = translate.customize.skin.red;
-//   customizeSkinGreenLabel.textContent = translate.customize.skin.green;
-//   customizeSkinPinkLabel.textContent = translate.customize.skin.pink;
-//   copyright.textContent = translate.footer.copyright;
-//   termsOfUse.textContent = translate.footer.termsOfUse;
-//   privacyPolicy.textContent = translate.footer.privacyPolicy;
-// }

@@ -208,429 +208,259 @@ const skin = {
 };
 
 // variable
-let isPaid = false;
-// let timerStartAt = null;
+// 팔다리
+let feet = null;
+// 현재 움직이는 중인 팔다리 (0:오른팔 1:왼팔 2:왼다리 3:오른다리)
+let currentMoving = 0;
+// 현재 모드(이동, 포인팅)
+let mode = "moving";
+// 머리 방향
 let headToRight = true;
-let dots = {};
+// 마우스 좌표
+let mousePos = [null, null];
+// 몸통 좌표
+let bodyPos = [null, null];
+// 속도
+let speedRatio = 1;
+// 결제 여부
+let isPaid = false;
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
 let cvsSize = [window.innerWidth * 2, window.innerHeight * 2];
-let mousePos = [null, null];
-let bodyPos = [null, null];
-let feet = null;
+// 애니메이션 프레임
 let animationFrameId = null;
-let areaDivide = 20;
-let areaGap = 10;
+// 크기 비율
 let sizeRatio = 1;
+// 몸통 너비
 let bodyWidth = Math.max(...cvsSize) * 0.01 * sizeRatio;
-let bodyHeight = bodyWidth * 2.3;
+// 몸통 길이
+let bodyHeight = bodyWidth * 2.5;
+// 팔다리 너비
 let limbsWidth = bodyWidth * 0.8;
-let movementType = "A";
+// 현재 등록된 이벤트리스너들
+let allEventListeners = [];
 
-function sendMessage(message, callback = () => null) {
-  chrome.runtime.sendMessage(message, (res) => callback(res));
-}
+/**
+ * 팔다리의 랜덤위치를 반환하는 함수*/
+const getRandomFeetPos = (currentMoving, directionX, directionY) => {
+  const [bodyX, bodyY] = bodyPos;
+  const range = bodyHeight * 2;
 
-// 서비스워커가 꺼지지 않도록
-const swKeepAlive = {
-  interval: null,
-  sendMsgToSw() {
-    sendMessage({ swKeepAlive: true }, (res) => {
-      console.log(res);
-    });
-  },
-};
+  let xMin;
+  let xMax;
+  let yMin;
+  let yMax;
 
-// 프로그램 토글 여부 초기화
-getStorageItem("enabled", (result) => {
-  if (!!result?.enabled) {
-    enable();
-  }
-});
-// 타이머 초기화
-// getStorageItem("timerStartAt", (result) => {
-//   if (!!result?.timerStartAt) {
-//     timerStartAt = result.timerStartAt;
-//   }
-// });
-// 결제 여부 초기화
-getStorageItem("isPaid", (result) => {
-  isPaid = !!result?.isPaid;
-});
-// 사이즈 초기화
-getStorageItem("size", (result) => {
-  if (!!result?.size) {
-    customizeSize(result.size);
-  }
-});
-// 고정점 개수 초기화
-getStorageItem("handleSpacing", (result) => {
-  if (!!result?.handleSpacing) {
-    customizeDots(parseInt(result.handleSpacing));
-  }
-});
-// 스킨 초기화
-getStorageItem("skin", (result) => {
-  if (!!result?.skin) {
-    skin.current = result.skin;
-  }
-});
-// 글리치 타입 초기화
-getStorageItem("glitchIncludesAllSkins", (result) => {
-  skin.glitch.includesAllSkin = !!result?.glitchIncludesAllSkins;
-});
-// 이동 방식 초기화
-getStorageItem("movementType", (result) => {
-  if (!!result?.movementType) {
-    movementType = result.movementType;
-  }
-});
-
-// 프로그램 활성화 여부 및 결제 여부 등 감시
-chrome.storage.onChanged.addListener(function (changes, namespace) {
-  for (var key in changes) {
-    // 활성화 여부
-    if (key === "enabled") {
-      const status = changes[key].newValue;
-      if (status === true) {
-        enable();
-      } else {
-        disable();
-      }
-    } else if (key === "isPaid") {
-      const status = changes[key].newValue;
-      if (status === true) {
-        isPaid = true;
-        clearInterval(swKeepAlive.interval);
-        swKeepAlive.interval = null;
-      } else {
-        isPaid = false;
-      }
-    } else if (key === "size") {
-      const size = changes[key].newValue;
-      customizeSize(size);
-    } else if (key === "handleSpacing") {
-      const handleSpacing = changes[key].newValue;
-      customizeDots(parseInt(handleSpacing));
-    } else if (key === "skin") {
-      const newSkin = changes[key].newValue;
-      skin.current = newSkin;
-    } else if (key === "glitchIncludesAllSkins") {
-      const glitchIncludesAllSkins = changes[key].newValue;
-      skin.glitch.includesAllSkin = glitchIncludesAllSkins;
-    } else if (key === "movementType") {
-      const newType = changes[key].newValue;
-      movementType = newType;
-    }
-    // else if (key === "timerStartAt") {
-    //   const startAt = changes[key].newValue;
-    //   timerStartAt = startAt;
-    // }
-  }
-});
-// 팝업에서 메세지를 보낼 경우 여기에서 가장 먼저 수신한다.
-const receiveMessage = async (e) => {
-  // 보안 검사
-  if (
-    e.origin !== window.location.origin ||
-    e.origin !== "http://localhost:3000"
-  ) {
-    return;
-  }
-  // 받은 데이터
-  const { data } = e;
-
-  console.log("content has received data.", data);
-
-  // 로그인 성공
-  if (data.uid) {
-    updateStorageItem({ userData: data });
-    // 결제가 성공한 경우
-  } else if (data.status === "COMPLETED") {
-    // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
-    sendMessage({ paymentCompleted: true }, function (res) {
-      console.log(res);
-      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
-      window.postMessage("Payment confirmed.", "http://localhost:3000");
-    });
-    // 결제가 취소된 경우
-  } else if (data.status === "REFUNDED") {
-    console.log(data);
-    sendMessage({ paymentCanceled: true }, function (res) {
-      console.log(res);
-      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
-      window.postMessage("Payment canceled.", "http://localhost:3000");
-    });
-  }
-};
-window.addEventListener("message", receiveMessage);
-
-function updateStorageItem(item) {
-  chrome.storage.sync.set(item);
-}
-function removeStorageItem(item) {
-  chrome.storage.sync.remove(item);
-}
-async function getStorageItem(key, callback = () => null) {
-  let res = null;
-  await chrome.storage.sync.get([key], (result) => {
-    callback(result || {});
-    res = result || {};
-  });
-  return res;
-}
-
-const createDots = (cvsSize) => {
-  dots = {};
-  let [cvsWidth, cvsHeight] = cvsSize;
-  cvs.width = cvsWidth;
-  cvs.height = cvsHeight;
-  offscreenCvs.width = cvsWidth;
-  offscreenCvs.height = cvsHeight;
-
-  const areas = [];
-  const areaWidth = (cvsWidth - areaGap * areaDivide) / areaDivide;
-  const areaHeight = (cvsHeight - areaGap * areaDivide) / areaDivide;
-
-  for (let i = 1; i <= areaDivide + 2; i++) {
-    const startY =
-      areaGap / 2 + (areaHeight + areaGap) * (i - 1) - (areaHeight + areaGap);
-    const endY = startY + areaHeight;
-
-    for (let j = 1; j <= areaDivide + 2; j++) {
-      const startX =
-        areaGap / 2 + (areaWidth + areaGap) * (j - 1) - (areaWidth + areaGap);
-      const endX = startX + areaWidth;
-
-      areas.push({
-        startX,
-        startY,
-        endX,
-        endY,
-        width: areaWidth,
-        height: areaHeight,
-      });
-    }
+  // 오른손
+  if (currentMoving === 0) {
+    xMin = bodyX + directionX * bodyHeight;
+    xMax = bodyX + range + directionX * bodyHeight;
+    yMin = bodyY - range + directionY * bodyHeight;
+    yMax = bodyY + directionY * bodyHeight;
+    // 왼손
+  } else if (currentMoving === 1) {
+    xMin = bodyX - range + directionX * bodyHeight;
+    xMax = bodyX + directionX * bodyHeight;
+    yMin = bodyY - range + directionY * bodyHeight;
+    yMax = bodyY + directionY * bodyHeight;
+    //왼다리
+  } else if (currentMoving === 2) {
+    xMin = bodyX - range + directionX * bodyHeight;
+    xMax = bodyX + directionX * bodyHeight;
+    yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
+    yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
+    //오른다리
+  } else if (currentMoving === 3) {
+    xMin = bodyX + directionX * bodyHeight;
+    xMax = bodyX + range + directionX * bodyHeight;
+    yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
+    yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
   }
 
-  for (const area of areas) {
-    const { startX, endX, startY, endY } = area;
-    const x = Math.floor(Math.random() * (endX - startX) + startX);
-    const y = Math.floor(Math.random() * (endY - startY) + startY);
+  const x = Math.random() * (xMax - xMin) + xMin;
+  const y = Math.random() * (yMax - yMin) + yMin;
 
-    const dot = {
-      x,
-      y,
-      trackingMouse: false,
-    };
-
-    dots[GENERATE_ID()] = dot;
-  }
+  return { x, y };
 };
 
 const updateFeet = () => {
+  // 마우스 좌표
   const [mouseX, mouseY] = mousePos;
-  if (mouseX === null || mouseY === null) return;
 
-  const bodyX = bodyPos[0] ?? mouseX;
-  const bodyY = bodyPos[1] ?? mouseY;
-
-  const mouseBodyX = mouseX;
-  const mouseBodyY = mouseY + bodyHeight;
-
-  // 몸통 위치
-  let newBodyX = bodyX;
-  let newBodyY = bodyY;
-
-  let deltaX, deltaY, distance;
-
-  deltaX = mouseBodyX - bodyX;
-  deltaY = mouseBodyY - bodyY;
-  // 몸통과 마우스 사이의 거리를 좀 두고 싶다면 아래 값으로 사용
-  distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) - bodyHeight * 2;
-
-  if (movementType === "B" || distance <= bodyHeight * 2) {
-    const centerFeetX =
-      (feet?.reduce(
-        (acc, cur, i) => (cur.trackingMouse ? acc : acc + cur.x),
-        0
-      ) +
-        mouseX) /
-        4 || 0;
-    const centerFeetY =
-      (feet?.reduce(
-        (acc, cur, i) => (cur.trackingMouse ? acc : acc + cur.y),
-        0
-      ) +
-        mouseY) /
-        4 || 0;
-    deltaX = centerFeetX - bodyX;
-    deltaY = centerFeetY - bodyY;
-    // 몸통이 마우스 정위치로 움직이고 싶다면 아래 값으로 사용
-    distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+  if (!mouseX || !mouseY) {
+    return;
   }
 
-  const dampingFactor = 0.2;
-  const curSpeed = Math.min(
-    distance / (movementType === "B" ? 5 : 20),
-    bodyWidth * 1.5
-  );
-  const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
+  // 현재 몸통 좌표
+  const [bodyX, bodyY] = bodyPos;
 
-  if (SPEED > 0) {
+  // 손발 초기화
+  if (!feet) {
+    bodyPos = [mouseX, mouseY];
+    feet = [
+      {
+        ...getRandomFeetPos(0, 1, 1),
+        targetX: null,
+        targetY: null,
+        trackingMouse: false,
+      },
+      {
+        ...getRandomFeetPos(1, 1, 1),
+        targetX: null,
+        targetY: null,
+        trackingMouse: false,
+      },
+      { ...getRandomFeetPos(2, 1, 1), targetX: null, targetY: null },
+      { ...getRandomFeetPos(3, 1, 1), targetX: null, targetY: null },
+    ];
+
+    return;
+  }
+
+  // 마우스와 몸통 사이 거리
+  const mouseBodyDeltaX = mouseX - bodyX;
+  const mouseBodyDeltaY = mouseY - bodyY;
+  const mouseBodyDistance = Math.sqrt(
+    mouseBodyDeltaX ** 2 + mouseBodyDeltaY ** 2
+  );
+  // 몸통 기준 마우스 방향
+  const directionX = Math.sign(mouseBodyDeltaX); // 몸통 기준 마우스가 우측이면 +, 좌측이면 -
+  const directionY = Math.sign(mouseBodyDeltaY); // 몸통 기준 마우스가 위면 -, 아래면 +
+
+  // 이동모드(마우스를 향해서 움직이는 중)
+  if (mode === "moving") {
+    // 커서 방향에 따라 머리 방향 변경
+    // 이동 시에는 수직으로 움직일 때 움직임을 완화하기 위한 데드존 설정
+    if (Math.abs(bodyX - mouseX) >= bodyHeight) {
+      headToRight = directionX > 0;
+    }
+    // 계산할 팔다리의 데이터
+    const { x: feetX, y: feetY, targetX, targetY } = feet[currentMoving];
+
+    // 아직 타겟이 없으면 새로운 타겟 좌표 계산
+    if (!targetX || !targetY) {
+      // 이동범위 계산
+
+      const { x: newTargetX, y: newTargetY } = getRandomFeetPos(
+        currentMoving,
+        directionX,
+        directionY
+      );
+
+      feet[currentMoving] = {
+        ...feet[currentMoving],
+        targetX: newTargetX,
+        targetY: newTargetY,
+      };
+    } else {
+      // 타겟이 있으면 속력 계산 및 이동
+      const deltaX = targetX - feetX;
+      const deltaY = targetY - feetY;
+      const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+      const dampingFactor = 0.6;
+      const curSpeed = (distance / 3) * speedRatio;
+      const SPEED =
+        curSpeed < (bodyHeight / 5) * speedRatio ? 0 : curSpeed * dampingFactor;
+
+      if (SPEED > 0) {
+        const angle = Math.atan2(deltaY, deltaX);
+        const velocityX = SPEED * Math.cos(angle);
+        const velocityY = SPEED * Math.sin(angle);
+        feet[currentMoving].x = feetX + velocityX;
+        feet[currentMoving].y = feetY + velocityY;
+      } else {
+        feet[currentMoving].x = targetX;
+        feet[currentMoving].y = targetY;
+      }
+    }
+
+    // 팔다리가 목표 위치에 도달하면 다음 팔다리로 바톤터치
+    if (feetX === targetX && feetY === targetY) {
+      switch (currentMoving) {
+        case 0:
+          currentMoving = 2;
+          break;
+        case 1:
+          currentMoving = 3;
+          break;
+        case 2:
+          currentMoving = 1;
+          break;
+        case 3:
+          currentMoving = 0;
+          break;
+      }
+      feet[currentMoving].targetX = null;
+      feet[currentMoving].targetY = null;
+
+      // 현재 팔다리가 목표 위치에 도달했고 몸통도 마우스에 인접했다면 포인팅모드로 변경
+      if (mouseBodyDistance < bodyHeight * 2.5) mode = "pointing";
+    }
+  } else {
+    // 포인팅모드(위치는 고정하고 커서를 가리기는 모드), 커서가 우측이면 오른손, 좌측이면 왼손으로
+    const pointingHand = 0 <= mouseX - bodyX ? 0 : 1;
+    feet[pointingHand].trackingMouse = true;
+    feet[1 - pointingHand].trackingMouse = false;
+
+    // 커서 방향에 따라 머리 방향 설정, 이동모드와 다르게 포인팅모드에는 데드존이 없다.
+    headToRight = directionX > 0;
+
+    // 포인팅 중인 손의 데이터
+    const { x, y } = feet[pointingHand];
+
+    // 포인팅 중인 손의 위치 업데이트
+    const targetX =
+      mouseX +
+      limbsWidth *
+        ((bodyX - mouseX + Math.sign(mouseX - bodyX) * limbsWidth * 2) /
+          (limbsWidth * 4));
+    const targetY = mouseY - Math.sign(mouseY - bodyY) * limbsWidth * 1.5;
+    const deltaX = targetX - x;
+    const deltaY = targetY - y;
+    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+    const dampingFactor = 0.8;
+    const curSpeed = distance / 5;
+    const SPEED = curSpeed * dampingFactor;
+
     const angle = Math.atan2(deltaY, deltaX);
     const velocityX = SPEED * Math.cos(angle);
     const velocityY = SPEED * Math.sin(angle);
-    newBodyX += velocityX;
-    newBodyY += velocityY;
-    bodyPos = [newBodyX, newBodyY];
-  } else {
-    bodyPos = [bodyX, bodyY];
+    feet[pointingHand].x = x + velocityX;
+    feet[pointingHand].y = y + velocityY;
   }
 
-  // 다리 위치
-  const quadrant1 = [],
-    quadrant2 = [],
-    quadrant3 = [],
-    quadrant4 = [];
+  // 몸통 좌표 계산
+  const targetBodyX = feet.reduce((acc, cur) => acc + cur.x, 0) / 4;
+  const targetBodyY = feet.reduce((acc, cur) => acc + cur.y, 0) / 4;
 
-  for (const [id, dot] of Object.entries(dots)) {
-    const { x: dotX, y: dotY } = dot;
+  const bodyDeltaX = targetBodyX - bodyX;
+  const bodyDeltaY = targetBodyY - bodyY;
+  const distance = Math.sqrt(bodyDeltaX ** 2 + bodyDeltaY ** 2);
 
-    const deltaX = newBodyX - dotX;
-    const deltaY = newBodyY - dotY;
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-    const dotDistance = { id, distance };
+  const dampingFactor = 0.8;
+  const curSpeed = (distance / 4) * speedRatio;
+  const SPEED = curSpeed * dampingFactor;
 
-    if (dotX <= bodyX) {
-      if (dotY <= bodyY) {
-        quadrant2.push(dotDistance);
-      } else {
-        quadrant3.push(dotDistance);
-      }
-    } else {
-      if (dotY <= bodyY) {
-        quadrant1.push(dotDistance);
-      } else {
-        quadrant4.push(dotDistance);
-      }
-    }
+  const angle = Math.atan2(bodyDeltaY, bodyDeltaX);
+  const velocityX = SPEED * Math.cos(angle);
+  const velocityY = SPEED * Math.sin(angle);
+
+  bodyPos[0] = bodyX + velocityX;
+  bodyPos[1] = bodyY + velocityY;
+
+  // bodyPos[0] = targetBodyX;
+  // bodyPos[1] = targetBodyY;
+
+  // 마우스가 몸통 근처에서 벗어났으면 이동모드로 변경
+  if (mouseBodyDistance >= bodyHeight * 3.5) {
+    feet[0].trackingMouse = false;
+    feet[1].trackingMouse = false;
+    mode = "moving";
   }
-
-  const sortedQuadrant1 = DOT_SORT(quadrant1),
-    sortedQuadrant2 = DOT_SORT(quadrant2),
-    sortedQuadrant3 = DOT_SORT(quadrant3),
-    sortedQuadrant4 = DOT_SORT(quadrant4);
-
-  // const nearDot1 = sortedQuadrant1[0]?.id,
-  //   nearDot2 = sortedQuadrant2[0]?.id,
-  //   nearDot3 = sortedQuadrant3[0]?.id,
-  //   nearDot4 = sortedQuadrant4[0]?.id,
-  //   nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
-
-  // 다리는 몸통과 너무 가깝지 않도록 조절
-  const nearDot1 = sortedQuadrant1[0]?.id,
-    nearDot2 = sortedQuadrant2[0]?.id,
-    nearDot3 =
-      dots[sortedQuadrant3[0]?.id]?.y > bodyY + bodyHeight * 0.3
-        ? sortedQuadrant3[0]?.id
-        : sortedQuadrant3[1]?.id,
-    nearDot4 =
-      dots[sortedQuadrant4[0]?.id]?.y > bodyY + bodyHeight * 0.3
-        ? sortedQuadrant4[0]?.id
-        : sortedQuadrant4[1]?.id,
-    nearDots = [nearDot1, nearDot2, nearDot3, nearDot4];
-
-  let newFeet = feet;
-
-  if (
-    !newFeet &&
-    (!dots[nearDot1] || !dots[nearDot2] || !dots[nearDot3] || !dots[nearDot4])
-  ) {
-    return null;
-  }
-
-  newFeet ??= [dots[nearDot1], dots[nearDot2], dots[nearDot3], dots[nearDot4]];
-
-  for (let i = 0; i < newFeet.length; i++) {
-    const foot = newFeet[i];
-    const { x: footX, y: footY } = foot;
-    const nearDot = nearDots[i];
-    let targetX, targetY;
-
-    // 손가락 가리키는거 비활성화하려면 아래 값을 false로
-    const isTrackingMouse =
-      (i === 0 && bodyX <= mouseBodyX) || (i === 1 && bodyX > mouseBodyX);
-
-    // 마우스 방향따라 머리 방향 지정
-    if (i === 0 && isTrackingMouse) {
-      headToRight = true;
-    } else if (i === 1 && isTrackingMouse) {
-      headToRight = false;
-    }
-
-    if (isTrackingMouse) {
-      targetX =
-        mouseX +
-        limbsWidth *
-          ((bodyX - mouseX - Math.sign(bodyX - mouseX) * limbsWidth * 2) /
-            (limbsWidth * 4));
-      targetY = mouseY + Math.sign(bodyY - mouseY) * limbsWidth * 1.5;
-
-      const deltaX = bodyX - targetX;
-      const deltaY = bodyY - targetY;
-      const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-      if (distance >= bodyHeight * 3) {
-        const directionX = mouseX - bodyX;
-        const directionY = mouseY - bodyY;
-        const length = Math.sqrt(
-          directionX * directionX + directionY * directionY
-        );
-        const unitDirectionX = directionX / length;
-        const unitDirectionY = directionY / length;
-        targetX = bodyX + unitDirectionX * bodyHeight * 3;
-        targetY = bodyY + unitDirectionY * bodyHeight * 3;
-      }
-    } else {
-      targetX = dots[nearDot]?.x;
-      targetY = dots[nearDot]?.y;
-    }
-
-    if (!targetX || !targetY) continue;
-
-    let newFootX, newFootY;
-
-    const deltaX = targetX - footX;
-    const deltaY = targetY - footY;
-    const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-    const dampingFactor = 0.6;
-    const curSpeed = Math.min(distance / 3, bodyWidth * 1.5);
-    console.log(curSpeed, bodyWidth);
-    const SPEED = curSpeed < 0.01 ? 0 : curSpeed * dampingFactor;
-
-    if (SPEED > 0) {
-      const angle = Math.atan2(deltaY, deltaX);
-      const velocityX = SPEED * Math.cos(angle);
-      const velocityY = SPEED * Math.sin(angle);
-      newFootX = footX + velocityX;
-      newFootY = footY + velocityY;
-    } else {
-      newFootX = targetX;
-      newFootY = targetY;
-    }
-
-    newFeet[i] = {
-      ...newFeet[i],
-      x: newFootX,
-      y: newFootY,
-      trackingMouse: isTrackingMouse,
-    };
-  }
-
-  feet = newFeet;
 };
 
+// 캔버스에 그리기
 const draw = () => {
   if (bodyPos[0] === null || bodyPos[1] === null) return;
 
@@ -638,6 +468,7 @@ const draw = () => {
   let [mouseX, mouseY] = mousePos;
   let [bodyX, bodyY] = bodyPos;
 
+  // 스킨이 글리치일 경우
   const isGlitch = skin.current === "glitch";
   let glitchRandomValue = 0;
   if (isGlitch) {
@@ -1051,19 +882,6 @@ const draw = () => {
     );
   });
 
-  // !isPaid &&
-  //   drawCommands3.push((ctx) => {
-  //     const [H, M, S] = secToHMS(
-  //       Math.round((300000 + timerStartAt - Date.now()) / 1000)
-  //     );
-  //     const text = `${M.toString().padStart(2, "0")}:${Math.round(S)
-  //       .toString()
-  //       .padStart(2, "0")}`;
-  //     ctx.fillStyle = "black";
-  //     ctx.font = "24px monospace";
-  //     ctx.fillText(text, bodyX - 36, bodyY - bodyHeight * 1.5);
-  //   });
-
   // 그림자 그리기 명령을 drawCommands1으로 합치기
   drawCommands1.unshift(
     (ctx) => {
@@ -1079,7 +897,7 @@ const draw = () => {
     }
   );
 
-  // 캔버스 전체 지우기 및 설정
+  // 캔버스 전체 지우기
   drawCommands1.unshift((ctx) => {
     ctx.clearRect(0, 0, cvsWidth, cvsHeight);
   });
@@ -1102,32 +920,36 @@ const draw = () => {
 
 const updateAndDraw = () => {
   animationFrameId = requestAnimationFrame(() => {
+    console.log(speedRatio);
     updateFeet();
     draw();
     updateAndDraw();
   });
 };
 
-let allEventListeners = [];
 const windowResizeHandler = () => {
   // 고해상도를 위해 캔버스 사이즈를 윈도우 사이즈 2배로 설정
   const newCvsSize = [window.innerWidth * 2, window.innerHeight * 2];
 
   cvsSize = newCvsSize;
+  cvs.width = newCvsSize[0];
+  cvs.height = newCvsSize[1];
+  offscreenCvs.width = newCvsSize[0];
+  offscreenCvs.height = newCvsSize[1];
   bodyWidth = Math.max(...newCvsSize) * 0.01 * sizeRatio;
   bodyHeight = bodyWidth * 2.3;
   limbsWidth = bodyWidth * 0.8;
-  createDots(newCvsSize);
 };
 const windowMouseMoveHandler = (e) => {
   // 캔버스를 0.5배율 했기 때문에 마우스의 위치는 2배율된 좌표로 계산
   mousePos = [e.clientX * 2, e.clientY * 2];
 };
 const iframeMouseMoveHandler = (e, x = 0, y = 0) => {
-  console.log(x, y);
+  // 캔버스를 0.5배율 했기 때문에 마우스의 위치는 2배율된 좌표로 계산
   mousePos = [e.clientX * 2 + x, e.clientY * 2 + y];
 };
 
+// 활성화
 function enable() {
   windowResizeHandler();
 
@@ -1172,6 +994,8 @@ function enable() {
     swKeepAlive.interval ??= setInterval(swKeepAlive.sendMsgToSw, 10000);
   }
 }
+
+// 비활성화
 function disable() {
   cancelAnimationFrame(animationFrameId);
   cvs.remove();
@@ -1186,47 +1010,9 @@ function disable() {
 }
 
 //
-// tools
+// TOOLS
 //
-const DOT_SORT = (dots) => {
-  if (dots.length < 2) return dots;
 
-  const center = Math.round(dots.length / 2),
-    left = DOT_SORT(dots.slice(0, center)),
-    right = DOT_SORT(dots.slice(center)),
-    merged = [];
-
-  let indexL = 0,
-    indexR = 0;
-
-  while (indexL < left.length && indexR < right.length) {
-    const distanceL = left[indexL].distance,
-      distanceR = right[indexR].distance;
-
-    if (distanceL <= distanceR) {
-      merged.push(left[indexL]);
-      indexL += 1;
-    } else {
-      merged.push(right[indexR]);
-      indexR += 1;
-    }
-  }
-
-  return merged.concat(left.slice(indexL), right.slice(indexR));
-};
-const GENERATE_ID = () => {
-  const now = Date.now();
-  const dateReverse = now.toString().split("").reverse();
-  const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "";
-
-  for (let i = 0; i < dateReverse.length; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    id += characters.charAt(randomIndex) + dateReverse[i];
-  }
-
-  return id;
-};
 const customizeSize = (ratio) => {
   ratio /= 100;
   sizeRatio = ratio;
@@ -1234,13 +1020,141 @@ const customizeSize = (ratio) => {
   bodyHeight = bodyWidth * 2.3;
   limbsWidth = bodyWidth * 0.8;
 };
-const customizeDots = (handleSpacing) => {
-  areaDivide = 60 - handleSpacing;
-  windowResizeHandler();
+const customizeSpeed = (ratio) => {
+  ratio /= 100;
+  speedRatio = ratio;
 };
-function secToHMS(sec) {
-  const hour = Math.max(Math.floor(sec / 3600), 0);
-  const minute = Math.min(Math.max(Math.floor((sec % 3600) / 60), 0), 59);
-  const second = Math.min(Math.max(sec % 60, 0), 59);
-  return [hour, minute, second];
+
+//
+// CHROME EXTENSION & WINDOW MESSAGE
+//
+function sendMessage(message, callback = () => null) {
+  chrome.runtime.sendMessage(message, (res) => callback(res));
+}
+// 서비스워커가 꺼지지 않도록
+const swKeepAlive = {
+  interval: null,
+  sendMsgToSw() {
+    sendMessage({ swKeepAlive: true }, (res) => {
+      console.log(res);
+    });
+  },
+};
+// 프로그램 토글 여부 초기화
+getStorageItem("enabled", (result) => {
+  if (!!result?.enabled) {
+    enable();
+  }
+});
+// 결제 여부 초기화
+getStorageItem("isPaid", (result) => {
+  isPaid = !!result?.isPaid;
+});
+// 사이즈 초기화
+getStorageItem("size", (result) => {
+  if (!!result?.size) {
+    customizeSize(result.size);
+  }
+});
+// 속도 초기화
+getStorageItem("speed", (result) => {
+  if (!!result?.speed) {
+    customizeSpeed(result.speed);
+  }
+});
+// 스킨 초기화
+getStorageItem("skin", (result) => {
+  if (!!result?.skin) {
+    skin.current = result.skin;
+  }
+});
+// 글리치 타입 초기화
+getStorageItem("glitchIncludesAllSkins", (result) => {
+  skin.glitch.includesAllSkin = !!result?.glitchIncludesAllSkins;
+});
+// 프로그램 활성화 여부 및 결제 여부 등 감시
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+  for (var key in changes) {
+    // 활성화 여부
+    if (key === "enabled") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        enable();
+      } else {
+        disable();
+      }
+    } else if (key === "isPaid") {
+      const status = changes[key].newValue;
+      if (status === true) {
+        isPaid = true;
+        clearInterval(swKeepAlive.interval);
+        swKeepAlive.interval = null;
+      } else {
+        isPaid = false;
+      }
+    } else if (key === "size") {
+      const size = changes[key].newValue;
+      customizeSize(size);
+    } else if (key === "speed") {
+      const speed = changes[key].newValue;
+      customizeSpeed(speed);
+    } else if (key === "skin") {
+      const newSkin = changes[key].newValue;
+      skin.current = newSkin;
+    } else if (key === "glitchIncludesAllSkins") {
+      const glitchIncludesAllSkins = changes[key].newValue;
+      skin.glitch.includesAllSkin = glitchIncludesAllSkins;
+    }
+  }
+});
+// 팝업에서 메세지를 보낼 경우 여기에서 가장 먼저 수신한다.
+const receiveMessage = async (e) => {
+  // 보안 검사
+  if (
+    e.origin !== window.location.origin ||
+    e.origin !== "http://localhost:3000"
+  ) {
+    return;
+  }
+  // 받은 데이터
+  const { data } = e;
+
+  console.log("content has received data.", data);
+
+  // 로그인 성공
+  if (data.uid) {
+    updateStorageItem({ userData: data });
+    // 결제가 성공한 경우
+  } else if (data.status === "COMPLETED") {
+    // 백그라운드에 결제가 성공했음을 알림는 메세지를 전송한다.
+    sendMessage({ paymentCompleted: true }, function (res) {
+      console.log(res);
+      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
+      window.postMessage("Payment confirmed.", "http://localhost:3000");
+    });
+    // 결제가 취소된 경우
+  } else if (data.status === "REFUNDED") {
+    console.log(data);
+    sendMessage({ paymentCanceled: true }, function (res) {
+      console.log(res);
+      // 백그라운드에서 확인이 완료되면 결제 팝업에 확인했다고 답장 보내기
+      window.postMessage("Payment canceled.", "http://localhost:3000");
+    });
+  }
+};
+window.addEventListener("message", receiveMessage);
+
+function updateStorageItem(item) {
+  chrome.storage.sync.set(item);
+}
+function removeStorageItem(item) {
+  chrome.storage.sync.remove(item);
+}
+async function getStorageItem(key, callback = () => null) {
+  let res = null;
+  await chrome.storage.sync.get([key], (result) => {
+    callback(result || {});
+    res = result || {};
+  });
+  return res;
 }

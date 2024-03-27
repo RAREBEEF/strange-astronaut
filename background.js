@@ -1,31 +1,5 @@
-// const TIMER = { startAt: null, interval: null };
 let IS_PAID = null;
 let ENABLED = null;
-
-// function startTimer() {
-//   if (!TIMER.interval) {
-//     const now = Date.now();
-//     updateStorageItem({ timerStartAt: now });
-
-//     TIMER.startAt = now;
-//     TIMER.interval = setInterval(() => {
-//       const remain = (300000 + TIMER.startAt - Date.now()) / 1000;
-//       if (remain <= 0) {
-//         shutdownTimer();
-//         updateStorageItem({ enabled: false });
-//       }
-//     }, 1000);
-//   }
-// }
-
-// function shutdownTimer() {
-//   if (!!TIMER.interval) {
-//     clearInterval(TIMER.interval);
-
-//     TIMER.interval = null;
-//     TIMER.startAt = null;
-//   }
-// }
 
 // 초기화
 async function init() {
@@ -65,22 +39,7 @@ async function init() {
       ENABLED = false;
     }
   });
-
-  // updateTimerStatus();
 }
-
-// // 앱 상태 체크
-// function updateTimerStatus() {
-//   if (ENABLED === null || IS_PAID === null) {
-//     return;
-//   } else if (IS_PAID) {
-//     shutdownTimer();
-//   } else if (ENABLED) {
-//     startTimer();
-//   } else {
-//     shutdownTimer();
-//   }
-// }
 
 // 결제 여부 및 체험 종료 감시
 chrome.storage.onChanged.addListener(function (changes, namespace) {
@@ -94,8 +53,6 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
       ENABLED = enabled;
     }
   }
-
-  // updateTimerStatus();
 });
 
 // 메세지 수신 (팝업 요청 or 결제 완료 or 체험 시작 시간)
@@ -123,9 +80,6 @@ chrome.runtime.onMessage.addListener(async function (
   } else if (message.openRefund) {
     openRefund(sendResponse);
   }
-  // else if (message.timerStartAt) {
-  //   sendResponse(TIMER.startAt);
-  // }
 });
 
 // 결제 팝업 열기/닫기
@@ -213,9 +167,8 @@ function openRefund(sendResponse) {
 function paymentCancel(sendResponse = null) {
   updateStorageItem({ isPaid: false });
   updateStorageItem({ skin: "default" });
-  updateStorageItem({ allowDotsCustom: false });
-  updateStorageItem({ handleSpacing: 40 });
   updateStorageItem({ size: 100 });
+  updateStorageItem({ speed: 100 });
   updateStorageItem({ glitchIncludesAllSkins: false });
   sendResponse && sendResponse("Cancel confirmed at background.");
 }
