@@ -506,6 +506,10 @@ button {
   gap: 5px;
 }
 
+#customize-drop-items-input {
+  margin-top: 5px;
+}
+
 .lang-select-wrapper #lang-select {
   width: fit-content;
 }

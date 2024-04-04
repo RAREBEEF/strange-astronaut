@@ -95,6 +95,13 @@ const DOMContentLoadedHandler = async () => {
   const glitchTypeInput = document.getElementById(
     "customize-glitch-type-input"
   );
+  const disableDropInput = document.getElementById(
+    "customize-disable-drop-input"
+  );
+  const dropItemsInput = document.getElementById("customize-drop-items-input");
+  const disableSpeechInput = document.getElementById(
+    "customize-disable-speech-input"
+  );
   const skinList = [
     "default",
     "glitch",
@@ -172,6 +179,18 @@ const DOMContentLoadedHandler = async () => {
     // // 글리치 타입
     getStorageItem("glitchIncludesAllSkins", (result) => {
       glitchTypeInput.checked = !!result?.glitchIncludesAllSkins;
+    });
+    // 드롭 토글
+    getStorageItem("disableDrop", (result) => {
+      disableDropInput.checked = !!result?.disableDrop;
+    });
+    // 드롭 아이템
+    getStorageItem("dropItems", (result) => {
+      dropItemsInput.value = result?.dropItems || "🍕🥕🥄🔧🔑💵";
+    });
+    // 말풍선 토글
+    getStorageItem("disableSpeech", (result) => {
+      disableSpeechInput.checked = !!result?.disableSpeech;
     });
     // // 사이즈
     getStorageItem("size", (result) => {
@@ -279,7 +298,33 @@ const DOMContentLoadedHandler = async () => {
       updateStorageItem({ glitchIncludesAllSkins: checked });
     }
   });
-
+  // // 드롭 토글
+  disableDropInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.checked = false;
+    } else {
+      const { checked } = e.target;
+      updateStorageItem({ disableDrop: checked });
+    }
+  });
+  // // 드롭 아이템
+  dropItemsInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.value = "🍕,🥕,🥄,🔧,🔑,💵";
+    } else {
+      const { value } = e.target;
+      updateStorageItem({ dropItems: value });
+    }
+  });
+  // // 말풍선 토글
+  disableSpeechInput.addEventListener("change", (e) => {
+    if (!IS_PAID) {
+      e.target.checked = false;
+    } else {
+      const { checked } = e.target;
+      updateStorageItem({ disableSpeech: checked });
+    }
+  });
   // // 사이즈
   sizeInput.addEventListener("input", (e) => {
     if (!IS_PAID) {

@@ -34,16 +34,6 @@
       <section id="toggle-wrapper" class="card">
         <h3 class="card-header">ON/OFF</h3>
         <div class="card-content">
-          <!-- <div id="timer-wrapper">
-            <p id="timer-description">
-              Free versions automatically turns off every 5 minutes.
-            </p>
-            <div id="timer">
-              <p id="timer-minute">05</p>
-              <p class="timer-colon">:</p>
-              <p id="timer-second">00</p>
-            </div>
-          </div> -->
           <input type="checkbox" id="toggle-btn" />
         </div>
       </section>
@@ -149,6 +139,38 @@
               value="100"
             />
             <p id="speed-indicator">100%</p></label
+          >
+          <label
+            id="customize-drop"
+            class="customize-item"
+            for="customize-drop"
+          >
+            <h4 class="customize-item-header" id="customize-drop-label">
+              DROP
+            </h4>
+            <label class="customize-disable-drop-wrapper">
+              <input id="customize-disable-drop-input" type="checkbox" />
+              Disable drop</label
+            ><label class="customize-drop-items-wrapper">
+              <h3>Drop items<br />(separated by commas)</h3>
+              <input
+                id="customize-drop-items-input"
+                type="text"
+                value="🍕,🥕,🥄,🔧,🔑,💵"
+              /> </label
+          ></label>
+          <label
+            id="customize-speech"
+            class="customize-item"
+            for="customize-speech"
+          >
+            <h4 class="customize-item-header" id="customize-speech-label">
+              SPEECH BUBBLES
+            </h4>
+            <label class="customize-disable-speech-wrapper">
+              <input id="customize-disable-speech-input" type="checkbox" />
+              Disable speech bubbles</label
+            ></label
           >
         </div>
         <div id="locker">PREMIUM REQUIRE</div>

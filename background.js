@@ -170,6 +170,9 @@ function paymentCancel(sendResponse = null) {
   updateStorageItem({ size: 100 });
   updateStorageItem({ speed: 100 });
   updateStorageItem({ glitchIncludesAllSkins: false });
+  updateStorageItem({ disableDrop: false });
+  updateStorageItem({ disableSpeech: false });
+  updateStorageItem({ dropItems: "🍕,🥕,🥄,🔧,🔑,💵" });
   sendResponse && sendResponse("Cancel confirmed at background.");
 }
 

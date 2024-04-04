@@ -10,7 +10,7 @@ cvs.style.position = "fixed";
 cvs.style.top = 0;
 cvs.style.left = 0;
 cvs.style.pointerEvents = "none";
-cvs.style.zIndex = 10000;
+cvs.style.zIndex = 10001;
 cvs.style.transform = "translate3d(-100vw,-100vh,0)";
 cvs.style.maxHeight = "200vh";
 cvs.style.maxWidth = "200vw";
@@ -222,6 +222,12 @@ let mousePos = [null, null];
 let bodyPos = [null, null];
 // 속도
 let speedRatio = 1;
+// 분실물 토글
+let disableDrop = false;
+// 분실물 목록
+let dropItems = ["🍕", "🥕", "🥄", "🔧", "🔑", "💵"];
+// 말풍선 토글
+let disableSpeech = false;
 // 결제 여부
 let isPaid = false;
 // 고해상도를 위해 캔버스 사이즈를 뷰포트 사이즈의 2배로 설정
@@ -240,7 +246,188 @@ let limbsWidth = bodyWidth * 0.8;
 let allEventListeners = [];
 
 /**
+ * 분실물 생성*/
+// const createDrop = (bodyPos) => {
+//   const [bodyX, bodyY] = bodyPos;
+
+//   if (!bodyX || !bodyY) return;
+
+//   // 분실물 위치, 크기 등 설정
+//   const drop = document.createElement("p");
+//   drop.textContent = "🍕";
+//   drop.style.position = "absolute";
+//   drop.style.zIndex = "10000";
+//   drop.style.top = `${window.scrollY + bodyY / 2}px`;
+//   drop.style.left = `${bodyX / 2}px`;
+//   drop.style.fontSize = `${bodyWidth}px`;
+//   drop.style.lineHeight = `${bodyWidth}px`;
+//   drop.style.cursor = "pointer";
+//   drop.style.userSelect = "none";
+//   drop.style.rotate = `${Math.random() * 360}deg`;
+
+//   // 페이지에 추가
+//   document.body.appendChild(drop);
+
+//   // 클릭 혹은 시간 만료시 페이지에서 제거
+//   const timer = setTimeout(() => {
+//     document.body.removeChild(drop);
+//   }, 300000);
+//   drop.onclick = () => {
+//     mode === "pointing" && document.body.removeChild(drop);
+//     clearTimeout(timer);
+//   };
+
+//   return {
+//     x: bodyX,
+//     y: bodyY,
+//     element: drop,
+//   };
+// };
+
+/**
+ * 말풍선
+ */
+let speechBubble = null;
+class SpeechBubble {
+  constructor(text) {
+    if (disableSpeech) return;
+    this.text = text;
+    this.show = true;
+    this.timer = setTimeout(() => {
+      this.show = false;
+    }, 2000);
+  }
+}
+
+// // 분실물
+let drops = {};
+class Drop {
+  constructor(bodyPos) {
+    if (disableDrop) return;
+    const [bodyX, bodyY] = bodyPos;
+    this.id = generateRandomId(10);
+    this.x = bodyX;
+    this.y = bodyY;
+    this.element = document.createElement("div");
+
+    const dropItemIndex = Math.round(Math.random() * (dropItems.length - 1));
+    this.element.textContent = dropItems[dropItemIndex].trim();
+    this.element.style.position = "absolute";
+    this.element.style.zIndex = "10000";
+    this.element.style.top = `${window.scrollY + bodyY / 2}px`;
+    this.element.style.left = `${window.scrollX + bodyX / 2}px`;
+    this.element.style.fontSize = `${bodyWidth}px`;
+    this.element.style.lineHeight = `${bodyWidth}px`;
+    this.element.style.cursor = "pointer";
+    this.element.style.userSelect = "none";
+    this.element.style.rotate = `${Math.random() * 360}deg`;
+
+    document.body.appendChild(this.element);
+
+    this.timer = setTimeout(() => {
+      this.remove();
+    }, 300000);
+
+    this.element.onclick = () => {
+      if (mode === "pointing") {
+        const random = Math.random();
+        if (random > 0.5) {
+          speechBubble = new SpeechBubble("thx!");
+        } else {
+          speechBubble = new SpeechBubble(":D");
+        }
+        clearTimeout(this.timer);
+        this.remove();
+      }
+    };
+  }
+
+  remove() {
+    document.body.removeChild(this.element);
+    delete drops[this.id];
+  }
+}
+
+/**
  * 팔다리의 랜덤위치를 반환하는 함수*/
+// const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
+//   const [bodyX, bodyY] = bodyPos;
+//   const range = bodyHeight * 2;
+//   const total = deltaX + deltaY;
+//   const directionX = Math.sign(deltaX);
+//   const directionY = Math.sign(deltaY);
+//   const rangeX = Math.abs(
+//     Math.min(
+//       Math.max(((range * deltaX) / total) * directionX, 0),
+//       bodyHeight * 2
+//     )
+//   );
+//   const rangeY = Math.abs((range - rangeX) * directionY);
+
+//   console.log(range, rangeX, rangeY);
+
+//   let xMin;
+//   let xMax;
+//   let yMin;
+//   let yMax;
+
+//   // 오른손
+//   if (currentMoving === 0) {
+//     xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
+//     xMax = bodyX + rangeX + directionX * bodyHeight;
+//     yMin = bodyY - rangeY + directionY * bodyHeight;
+//     yMax = bodyY + directionY * bodyHeight;
+//     // 왼손
+//   } else if (currentMoving === 1) {
+//     xMin = bodyX - rangeX + directionX * bodyHeight;
+//     xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
+//     yMin = bodyY - rangeY + directionY * bodyHeight;
+//     yMax = bodyY + directionY * bodyHeight;
+//     //왼다리
+//   } else if (currentMoving === 2) {
+//     xMin = bodyX - rangeX + directionX * bodyHeight;
+//     xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
+//     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
+//     yMax = bodyHeight / 2 + bodyY + rangeY + directionY * bodyHeight;
+//     //오른다리
+//   } else if (currentMoving === 3) {
+//     xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
+//     xMax = bodyX + rangeX + directionX * bodyHeight;
+//     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
+//     yMax = bodyHeight / 2 + bodyY + rangeY + directionY * bodyHeight;
+//   }
+
+//   // // 오른손
+//   // if (currentMoving === 0) {
+//   //   xMin = Math.max(bodyX + rangeX, bodyX);
+//   //   xMax = bodyX + rangeX;
+//   //   yMin = bodyY + rangeY;
+//   //   yMax = bodyY + rangeY;
+//   //   // 왼손
+//   // } else if (currentMoving === 1) {
+//   //   xMin = bodyX + rangeX;
+//   //   xMax = Math.min(bodyX + rangeX, bodyX);
+//   //   yMin = bodyY + rangeY;
+//   //   yMax = bodyY + rangeY;
+//   //   //왼다리
+//   // } else if (currentMoving === 2) {
+//   //   xMin = bodyX + rangeX;
+//   //   xMax = Math.min(bodyX + rangeX, bodyX);
+//   //   yMin = bodyHeight / 2 + bodyY + rangeY;
+//   //   yMax = bodyHeight / 2 + bodyY + rangeY;
+//   //   //오른다리
+//   // } else if (currentMoving === 3) {
+//   //   xMin = Math.max(bodyX + rangeX, bodyX);
+//   //   xMax = bodyX + rangeX;
+//   //   yMin = bodyHeight / 2 + bodyY + rangeY;
+//   //   yMax = bodyHeight / 2 + bodyY + rangeY;
+//   // }
+
+//   const x = Math.random() * (xMax - xMin) + xMin;
+//   const y = Math.random() * (yMax - yMin) + yMin;
+
+//   return { x, y };
+// };
 const getRandomFeetPos = (currentMoving, directionX, directionY) => {
   const [bodyX, bodyY] = bodyPos;
   const range = bodyHeight * 2;
@@ -252,25 +439,25 @@ const getRandomFeetPos = (currentMoving, directionX, directionY) => {
 
   // 오른손
   if (currentMoving === 0) {
-    xMin = bodyX + directionX * bodyHeight;
+    xMin = Math.max(bodyX + directionX * bodyHeight, bodyX - bodyWidth);
     xMax = bodyX + range + directionX * bodyHeight;
     yMin = bodyY - range + directionY * bodyHeight;
     yMax = bodyY + directionY * bodyHeight;
     // 왼손
   } else if (currentMoving === 1) {
     xMin = bodyX - range + directionX * bodyHeight;
-    xMax = bodyX + directionX * bodyHeight;
+    xMax = Math.min(bodyX + directionX * bodyHeight, bodyX + bodyWidth);
     yMin = bodyY - range + directionY * bodyHeight;
     yMax = bodyY + directionY * bodyHeight;
     //왼다리
   } else if (currentMoving === 2) {
     xMin = bodyX - range + directionX * bodyHeight;
-    xMax = bodyX + directionX * bodyHeight;
+    xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
     yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
     //오른다리
   } else if (currentMoving === 3) {
-    xMin = bodyX + directionX * bodyHeight;
+    xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
     xMax = bodyX + range + directionX * bodyHeight;
     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
     yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
@@ -298,19 +485,19 @@ const updateFeet = () => {
     bodyPos = [mouseX, mouseY];
     feet = [
       {
-        ...getRandomFeetPos(0, 1, 1),
+        ...getRandomFeetPos(0, -1, 0),
         targetX: null,
         targetY: null,
         trackingMouse: false,
       },
       {
-        ...getRandomFeetPos(1, 1, 1),
+        ...getRandomFeetPos(1, -1, 0),
         targetX: null,
         targetY: null,
         trackingMouse: false,
       },
-      { ...getRandomFeetPos(2, 1, 1), targetX: null, targetY: null },
-      { ...getRandomFeetPos(3, 1, 1), targetX: null, targetY: null },
+      { ...getRandomFeetPos(2, -1, 0), targetX: null, targetY: null },
+      { ...getRandomFeetPos(3, -1, 0), targetX: null, targetY: null },
     ];
 
     return;
@@ -338,8 +525,6 @@ const updateFeet = () => {
 
     // 아직 타겟이 없으면 새로운 타겟 좌표 계산
     if (!targetX || !targetY) {
-      // 이동범위 계산
-
       const { x: newTargetX, y: newTargetY } = getRandomFeetPos(
         currentMoving,
         directionX,
@@ -352,13 +537,30 @@ const updateFeet = () => {
         targetY: newTargetY,
       };
     } else {
+      if (!disableDrop) {
+        // 이동시 일정 확률로 물건을 흘림
+        const random = Math.random();
+        const isDropped = random > 0.999 && !speechBubble?.show;
+        if (isDropped) {
+          const drop = new Drop(bodyPos);
+          drops[drop.id] = drop;
+          if (random < 0.99925) {
+            speechBubble = new SpeechBubble("I dropped something!");
+          } else if (random < 0.9995) {
+            speechBubble = new SpeechBubble("Oops!");
+          } else if (random < 0.99975) {
+            speechBubble = new SpeechBubble("I think I lost something...");
+          }
+        }
+      }
+
       // 타겟이 있으면 속력 계산 및 이동
       const deltaX = targetX - feetX;
       const deltaY = targetY - feetY;
       const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-      const dampingFactor = 0.6;
-      const curSpeed = (distance / 3) * speedRatio;
+      const dampingFactor = 0.6 - speedRatio / 10;
+      const curSpeed = (distance / 1.5) * speedRatio;
       const SPEED =
         curSpeed < (bodyHeight / 5) * speedRatio ? 0 : curSpeed * dampingFactor;
 
@@ -390,11 +592,23 @@ const updateFeet = () => {
           currentMoving = 0;
           break;
       }
+
       feet[currentMoving].targetX = null;
       feet[currentMoving].targetY = null;
 
       // 현재 팔다리가 목표 위치에 도달했고 몸통도 마우스에 인접했다면 포인팅모드로 변경
-      if (mouseBodyDistance < bodyHeight * 2.5) mode = "pointing";
+      if (mouseBodyDistance < bodyHeight * 2.5) {
+        mode = "pointing";
+        // const random = Math.random();
+        // const say = random > 0.9 && !speechBubble?.show;
+        // if (say) {
+        //   if (random > 0.95) {
+        //     speechBubble = new SpeechBubble("I got you :b");
+        //   } else {
+        //     speechBubble = new SpeechBubble("Got it!");
+        //   }
+        // }
+      }
     }
   } else {
     // 포인팅모드(위치는 고정하고 커서를 가리기는 모드), 커서가 우측이면 오른손, 좌측이면 왼손으로
@@ -449,14 +663,20 @@ const updateFeet = () => {
   bodyPos[0] = bodyX + velocityX;
   bodyPos[1] = bodyY + velocityY;
 
-  // bodyPos[0] = targetBodyX;
-  // bodyPos[1] = targetBodyY;
-
   // 마우스가 몸통 근처에서 벗어났으면 이동모드로 변경
   if (mouseBodyDistance >= bodyHeight * 3.5) {
     feet[0].trackingMouse = false;
     feet[1].trackingMouse = false;
     mode = "moving";
+    // const random = Math.random();
+    // const say = random > 0.999 && !speechBubble?.show;
+    // if (say) {
+    //   if (random > 0.9995) {
+    //     speechBubble = new SpeechBubble("Wait!");
+    //   } else {
+    //     speechBubble = new SpeechBubble("Take me too :(");
+    //   }
+    // }
   }
 };
 
@@ -483,6 +703,7 @@ const draw = () => {
   const drawCommands2 = [];
   const drawCommands3 = [];
   const drawShadowCommads = [];
+  const drawdropsCommads = [];
 
   // 팔다리 몸통 그리기
   // 팔다리
@@ -882,6 +1103,14 @@ const draw = () => {
     );
   });
 
+  // feetRanges.forEach((feetRange) => {
+  //   const [xMin, xMax, yMin, yMax] = feetRange;
+  //   drawCommands3.push((ctx) => {
+  //     ctx.lineWidth = 0.5;
+  //     ctx.strokeRect(xMin, yMin, xMax - xMin, yMax - yMin);
+  //   });
+  // });
+
   // 그림자 그리기 명령을 drawCommands1으로 합치기
   drawCommands1.unshift(
     (ctx) => {
@@ -896,6 +1125,42 @@ const draw = () => {
       ctx.stroke();
     }
   );
+
+  // 말풍선
+  if (speechBubble?.show) {
+    drawCommands3.push((ctx) => {
+      const fontSize = Math.min(Math.max(bodyHeight / 2, 20), 30);
+      const { text } = speechBubble;
+      ctx.font = fontSize + "px Arial";
+      ctx.lineWidth = 2;
+
+      const padding = fontSize / 2;
+
+      const textWidth = ctx.measureText(text).width;
+      const textHeight = fontSize * 0.8;
+      const x = bodyX;
+      const y = bodyY - bodyHeight * 2;
+
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+
+      ctx.fillRect(
+        x - padding,
+        y - textHeight - padding,
+        textWidth + padding * 2,
+        textHeight + padding * 2
+      );
+      ctx.strokeRect(
+        x - padding,
+        y - textHeight - padding,
+        textWidth + padding * 2,
+        textHeight + padding * 2
+      );
+
+      ctx.fillStyle = "black";
+      ctx.fillText(text, x, y);
+    });
+  }
 
   // 캔버스 전체 지우기
   drawCommands1.unshift((ctx) => {
@@ -920,7 +1185,6 @@ const draw = () => {
 
 const updateAndDraw = () => {
   animationFrameId = requestAnimationFrame(() => {
-    console.log(speedRatio);
     updateFeet();
     draw();
     updateAndDraw();
@@ -1007,6 +1271,12 @@ function disable() {
     eventTarget.removeEventListener(eventType, handler);
   }
   allEventListeners = [];
+
+  // 분실물 클린업
+  for (let id of Object.keys(drops)) {
+    const drop = drops[id];
+    drop.remove();
+  }
 }
 
 //
@@ -1024,6 +1294,19 @@ const customizeSpeed = (ratio) => {
   ratio /= 100;
   speedRatio = ratio;
 };
+
+function generateRandomId(length) {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let randomId = "";
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    randomId += characters.charAt(randomIndex);
+  }
+
+  return randomId;
+}
 
 //
 // CHROME EXTENSION & WINDOW MESSAGE
@@ -1072,6 +1355,26 @@ getStorageItem("skin", (result) => {
 getStorageItem("glitchIncludesAllSkins", (result) => {
   skin.glitch.includesAllSkin = !!result?.glitchIncludesAllSkins;
 });
+// 드롭 토글 초기화
+getStorageItem("disableDrop", (result) => {
+  disableDrop = !!result?.disableDrop;
+});
+// 드롭 아이템 초기화
+getStorageItem("dropItems", (result) => {
+  dropItems = result?.dropItems.split(",").filter((item) => !!item) || [
+    "🍕",
+    "🥕",
+    "🥄",
+    "🔧",
+    "🔑",
+    "💵",
+  ];
+});
+// 말풍선 토글 초기화
+getStorageItem("disableSpeech", (result) => {
+  disableSpeech = !!result?.disableSpeech;
+});
+
 // 프로그램 활성화 여부 및 결제 여부 등 감시
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   for (var key in changes) {
@@ -1104,6 +1407,22 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     } else if (key === "glitchIncludesAllSkins") {
       const glitchIncludesAllSkins = changes[key].newValue;
       skin.glitch.includesAllSkin = glitchIncludesAllSkins;
+    } else if (key === "disableDrop") {
+      const isDisabled = changes[key].newValue;
+      disableDrop = isDisabled;
+    } else if (key === "dropItems") {
+      const items = changes[key].newValue;
+      dropItems = items.split(",").filter((item) => !!item) || [
+        "🍕",
+        "🥕",
+        "🥄",
+        "🔧",
+        "🔑",
+        "💵",
+      ];
+    } else if (key === "disableSpeech") {
+      const isDisabled = changes[key].newValue;
+      disableSpeech = isDisabled;
     }
   }
 });
