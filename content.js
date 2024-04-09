@@ -245,44 +245,7 @@ let limbsWidth = bodyWidth * 0.8;
 // 현재 등록된 이벤트리스너들
 let allEventListeners = [];
 
-/**
- * 분실물 생성*/
-// const createDrop = (bodyPos) => {
-//   const [bodyX, bodyY] = bodyPos;
-
-//   if (!bodyX || !bodyY) return;
-
-//   // 분실물 위치, 크기 등 설정
-//   const drop = document.createElement("p");
-//   drop.textContent = "🍕";
-//   drop.style.position = "absolute";
-//   drop.style.zIndex = "10000";
-//   drop.style.top = `${window.scrollY + bodyY / 2}px`;
-//   drop.style.left = `${bodyX / 2}px`;
-//   drop.style.fontSize = `${bodyWidth}px`;
-//   drop.style.lineHeight = `${bodyWidth}px`;
-//   drop.style.cursor = "pointer";
-//   drop.style.userSelect = "none";
-//   drop.style.rotate = `${Math.random() * 360}deg`;
-
-//   // 페이지에 추가
-//   document.body.appendChild(drop);
-
-//   // 클릭 혹은 시간 만료시 페이지에서 제거
-//   const timer = setTimeout(() => {
-//     document.body.removeChild(drop);
-//   }, 300000);
-//   drop.onclick = () => {
-//     mode === "pointing" && document.body.removeChild(drop);
-//     clearTimeout(timer);
-//   };
-
-//   return {
-//     x: bodyX,
-//     y: bodyY,
-//     element: drop,
-//   };
-// };
+// let feetRanges = [];
 
 /**
  * 말풍선
@@ -348,89 +311,20 @@ class Drop {
   }
 }
 
-/**
- * 팔다리의 랜덤위치를 반환하는 함수*/
-// const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
-//   const [bodyX, bodyY] = bodyPos;
-//   const range = bodyHeight * 2;
-//   const total = deltaX + deltaY;
-//   const directionX = Math.sign(deltaX);
-//   const directionY = Math.sign(deltaY);
-//   const rangeX = Math.abs(
-//     Math.min(
-//       Math.max(((range * deltaX) / total) * directionX, 0),
-//       bodyHeight * 2
-//     )
-//   );
-//   const rangeY = Math.abs((range - rangeX) * directionY);
-
-//   console.log(range, rangeX, rangeY);
-
-//   let xMin;
-//   let xMax;
-//   let yMin;
-//   let yMax;
-
-//   // 오른손
-//   if (currentMoving === 0) {
-//     xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
-//     xMax = bodyX + rangeX + directionX * bodyHeight;
-//     yMin = bodyY - rangeY + directionY * bodyHeight;
-//     yMax = bodyY + directionY * bodyHeight;
-//     // 왼손
-//   } else if (currentMoving === 1) {
-//     xMin = bodyX - rangeX + directionX * bodyHeight;
-//     xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
-//     yMin = bodyY - rangeY + directionY * bodyHeight;
-//     yMax = bodyY + directionY * bodyHeight;
-//     //왼다리
-//   } else if (currentMoving === 2) {
-//     xMin = bodyX - rangeX + directionX * bodyHeight;
-//     xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
-//     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
-//     yMax = bodyHeight / 2 + bodyY + rangeY + directionY * bodyHeight;
-//     //오른다리
-//   } else if (currentMoving === 3) {
-//     xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
-//     xMax = bodyX + rangeX + directionX * bodyHeight;
-//     yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
-//     yMax = bodyHeight / 2 + bodyY + rangeY + directionY * bodyHeight;
-//   }
-
-//   // // 오른손
-//   // if (currentMoving === 0) {
-//   //   xMin = Math.max(bodyX + rangeX, bodyX);
-//   //   xMax = bodyX + rangeX;
-//   //   yMin = bodyY + rangeY;
-//   //   yMax = bodyY + rangeY;
-//   //   // 왼손
-//   // } else if (currentMoving === 1) {
-//   //   xMin = bodyX + rangeX;
-//   //   xMax = Math.min(bodyX + rangeX, bodyX);
-//   //   yMin = bodyY + rangeY;
-//   //   yMax = bodyY + rangeY;
-//   //   //왼다리
-//   // } else if (currentMoving === 2) {
-//   //   xMin = bodyX + rangeX;
-//   //   xMax = Math.min(bodyX + rangeX, bodyX);
-//   //   yMin = bodyHeight / 2 + bodyY + rangeY;
-//   //   yMax = bodyHeight / 2 + bodyY + rangeY;
-//   //   //오른다리
-//   // } else if (currentMoving === 3) {
-//   //   xMin = Math.max(bodyX + rangeX, bodyX);
-//   //   xMax = bodyX + rangeX;
-//   //   yMin = bodyHeight / 2 + bodyY + rangeY;
-//   //   yMax = bodyHeight / 2 + bodyY + rangeY;
-//   // }
-
-//   const x = Math.random() * (xMax - xMin) + xMin;
-//   const y = Math.random() * (yMax - yMin) + yMin;
-
-//   return { x, y };
-// };
-const getRandomFeetPos = (currentMoving, directionX, directionY) => {
+const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
   const [bodyX, bodyY] = bodyPos;
-  const range = bodyHeight * 2;
+  const directionX = Math.sign(deltaX); // 몸통 기준 마우스가 우측이면 +, 좌측이면 -
+  const directionY = Math.sign(deltaY); // 몸통 기준 마우스가 위면 -, 아래면 +
+
+  const totalDelta = Math.abs(deltaX) + Math.abs(deltaY);
+  const ratioX = Math.max(Math.min(Math.abs(deltaX) / totalDelta, 0.8), 0.2);
+  const ratioY = Math.max(Math.min(Math.abs(deltaY) / totalDelta, 0.8), 0.2);
+
+  const rangeX = bodyHeight * 3 * ratioX;
+  const rangeY = bodyHeight * 3 * ratioY;
+
+  const directionControlX = directionX * bodyHeight * 3 * ratioX;
+  const directionControlY = directionY * bodyHeight * 3 * ratioY;
 
   let xMin;
   let xMax;
@@ -439,32 +333,35 @@ const getRandomFeetPos = (currentMoving, directionX, directionY) => {
 
   // 오른손
   if (currentMoving === 0) {
-    xMin = Math.max(bodyX + directionX * bodyHeight, bodyX - bodyWidth);
-    xMax = bodyX + range + directionX * bodyHeight;
-    yMin = bodyY - range + directionY * bodyHeight;
-    yMax = bodyY + directionY * bodyHeight;
+    xMin = bodyX + directionControlX;
+    xMax = bodyX + rangeX + directionControlX;
+    yMin = bodyY - rangeY + directionControlY;
+    yMax = bodyY + directionControlY;
+
     // 왼손
   } else if (currentMoving === 1) {
-    xMin = bodyX - range + directionX * bodyHeight;
-    xMax = Math.min(bodyX + directionX * bodyHeight, bodyX + bodyWidth);
-    yMin = bodyY - range + directionY * bodyHeight;
-    yMax = bodyY + directionY * bodyHeight;
+    xMin = bodyX - rangeX + directionControlX;
+    xMax = bodyX + directionControlX;
+    yMin = bodyY - rangeY + directionControlY;
+    yMax = bodyY + directionControlY;
     //왼다리
   } else if (currentMoving === 2) {
-    xMin = bodyX - range + directionX * bodyHeight;
-    xMax = Math.min(bodyX + directionX * bodyHeight, bodyX);
-    yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
-    yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
+    xMin = bodyX - rangeX + directionControlX;
+    xMax = bodyX + directionControlX;
+    yMin = bodyHeight / 2 + bodyY + directionControlY;
+    yMax = bodyHeight / 2 + bodyY + rangeY + directionControlY;
     //오른다리
   } else if (currentMoving === 3) {
-    xMin = Math.max(bodyX + directionX * bodyHeight, bodyX);
-    xMax = bodyX + range + directionX * bodyHeight;
-    yMin = bodyHeight / 2 + bodyY + directionY * bodyHeight;
-    yMax = bodyHeight / 2 + bodyY + range + directionY * bodyHeight;
+    xMin = bodyX + directionControlX;
+    xMax = bodyX + rangeX + directionControlX;
+    yMin = bodyHeight / 2 + bodyY + directionControlY;
+    yMax = bodyHeight / 2 + bodyY + rangeY + directionControlY;
   }
 
   const x = Math.random() * (xMax - xMin) + xMin;
   const y = Math.random() * (yMax - yMin) + yMin;
+
+  // feetRanges[currentMoving] = [xMin, xMax, yMin, yMax];
 
   return { x, y };
 };
@@ -527,8 +424,8 @@ const updateFeet = () => {
     if (!targetX || !targetY) {
       const { x: newTargetX, y: newTargetY } = getRandomFeetPos(
         currentMoving,
-        directionX,
-        directionY
+        mouseBodyDeltaX,
+        mouseBodyDeltaY
       );
 
       feet[currentMoving] = {
@@ -540,15 +437,15 @@ const updateFeet = () => {
       if (!disableDrop) {
         // 이동시 일정 확률로 물건을 흘림
         const random = Math.random();
-        const isDropped = random > 0.999 && !speechBubble?.show;
+        const isDropped = random > 0.9999 && !speechBubble?.show;
         if (isDropped) {
           const drop = new Drop(bodyPos);
           drops[drop.id] = drop;
-          if (random < 0.99925) {
+          if (random < 0.999925) {
             speechBubble = new SpeechBubble("I dropped something!");
-          } else if (random < 0.9995) {
+          } else if (random < 0.99995) {
             speechBubble = new SpeechBubble("Oops!");
-          } else if (random < 0.99975) {
+          } else if (random < 0.999975) {
             speechBubble = new SpeechBubble("I think I lost something...");
           }
         }
@@ -559,10 +456,12 @@ const updateFeet = () => {
       const deltaY = targetY - feetY;
       const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-      const dampingFactor = 0.6 - speedRatio / 10;
-      const curSpeed = (distance / 1.5) * speedRatio;
+      const dampingFactor = 0.6 + 0.6 * Math.max(1 - speedRatio, 0);
+      const curSpeed = (distance / 6) * speedRatio;
       const SPEED =
-        curSpeed < (bodyHeight / 5) * speedRatio ? 0 : curSpeed * dampingFactor;
+        curSpeed < (bodyHeight / 10) * speedRatio
+          ? 0
+          : curSpeed * dampingFactor;
 
       if (SPEED > 0) {
         const angle = Math.atan2(deltaY, deltaX);
@@ -599,15 +498,6 @@ const updateFeet = () => {
       // 현재 팔다리가 목표 위치에 도달했고 몸통도 마우스에 인접했다면 포인팅모드로 변경
       if (mouseBodyDistance < bodyHeight * 2.5) {
         mode = "pointing";
-        // const random = Math.random();
-        // const say = random > 0.9 && !speechBubble?.show;
-        // if (say) {
-        //   if (random > 0.95) {
-        //     speechBubble = new SpeechBubble("I got you :b");
-        //   } else {
-        //     speechBubble = new SpeechBubble("Got it!");
-        //   }
-        // }
       }
     }
   } else {
@@ -668,15 +558,6 @@ const updateFeet = () => {
     feet[0].trackingMouse = false;
     feet[1].trackingMouse = false;
     mode = "moving";
-    // const random = Math.random();
-    // const say = random > 0.999 && !speechBubble?.show;
-    // if (say) {
-    //   if (random > 0.9995) {
-    //     speechBubble = new SpeechBubble("Wait!");
-    //   } else {
-    //     speechBubble = new SpeechBubble("Take me too :(");
-    //   }
-    // }
   }
 };
 
@@ -1107,6 +988,7 @@ const draw = () => {
   //   const [xMin, xMax, yMin, yMax] = feetRange;
   //   drawCommands3.push((ctx) => {
   //     ctx.lineWidth = 0.5;
+  //     ctx.strokeStyle = "black";
   //     ctx.strokeRect(xMin, yMin, xMax - xMin, yMax - yMin);
   //   });
   // });
