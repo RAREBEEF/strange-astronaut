@@ -320,8 +320,8 @@ const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
   const ratioX = Math.max(Math.min(Math.abs(deltaX) / totalDelta, 0.8), 0.2);
   const ratioY = Math.max(Math.min(Math.abs(deltaY) / totalDelta, 0.8), 0.2);
 
-  const rangeX = bodyHeight * 3 * ratioX;
-  const rangeY = bodyHeight * 3 * ratioY;
+  const rangeX = bodyHeight * 2 * ratioX;
+  const rangeY = bodyHeight * 2 * ratioY;
 
   const directionControlX = directionX * bodyHeight * 3 * ratioX;
   const directionControlY = directionY * bodyHeight * 3 * ratioY;
@@ -333,7 +333,7 @@ const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
 
   // 오른손
   if (currentMoving === 0) {
-    xMin = bodyX + directionControlX;
+    xMin = Math.max(bodyX + directionControlX, bodyX + bodyWidth);
     xMax = bodyX + rangeX + directionControlX;
     yMin = bodyY - rangeY + directionControlY;
     yMax = bodyY + directionControlY;
@@ -341,21 +341,21 @@ const getRandomFeetPos = (currentMoving, deltaX, deltaY) => {
     // 왼손
   } else if (currentMoving === 1) {
     xMin = bodyX - rangeX + directionControlX;
-    xMax = bodyX + directionControlX;
+    xMax = Math.min(bodyX + directionControlX, bodyX - bodyWidth);
     yMin = bodyY - rangeY + directionControlY;
     yMax = bodyY + directionControlY;
     //왼다리
   } else if (currentMoving === 2) {
     xMin = bodyX - rangeX + directionControlX;
-    xMax = bodyX + directionControlX;
-    yMin = bodyHeight / 2 + bodyY + directionControlY;
-    yMax = bodyHeight / 2 + bodyY + rangeY + directionControlY;
+    xMax = Math.min(bodyX + directionControlX, bodyX - bodyWidth);
+    yMin = bodyHeight + bodyY + directionControlY;
+    yMax = bodyY + rangeY + directionControlY;
     //오른다리
   } else if (currentMoving === 3) {
-    xMin = bodyX + directionControlX;
+    xMin = Math.max(bodyX + directionControlX, bodyX + bodyWidth);
     xMax = bodyX + rangeX + directionControlX;
-    yMin = bodyHeight / 2 + bodyY + directionControlY;
-    yMax = bodyHeight / 2 + bodyY + rangeY + directionControlY;
+    yMin = bodyHeight + bodyY + directionControlY;
+    yMax = bodyY + rangeY + directionControlY;
   }
 
   const x = Math.random() * (xMax - xMin) + xMin;
